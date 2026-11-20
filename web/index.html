@@ -384,6 +384,8 @@ img.av{object-fit:cover}
 .composer.compact .tile-o{background:var(--muted)}
 .tile-o:enabled:hover,.tile-o:focus-visible{background:#EDE3DB;color:var(--text)}
 .tile-o[aria-pressed=true]{background:var(--brand-soft);color:var(--brand-ink)}
+.tile-o{position:relative}
+.tile-o .tile-selected{display:inline-flex;align-self:center;align-items:center;gap:3px;margin-top:-2px;padding:2px 6px;border-radius:999px;background:var(--brand);color:#fff;font-size:10px;line-height:1.4;font-weight:700}
 .cap-prev{height:54px;border-radius:7px;background:#101826;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;font-size:14px;line-height:1;color:#fff;letter-spacing:0;-webkit-text-stroke:1px #000;paint-order:stroke fill}
 .cap-prev b{font-weight:inherit}
 .lay-prev{height:54px;border-radius:7px;background:#101826;display:grid;place-items:center}
@@ -1444,7 +1446,7 @@ function stepper(id, label, val, min, max, step, unit) {
 function choice(id, items, val, disabled = false) {
   const captions = id === "o_style";
   return `<input type="hidden" id="${id}" value="${esc(val)}"><div class="tiles3" role="group"${captions ? ' aria-labelledby="o_style_label"' : ""}>${items.map(x =>
-    `<button type="button" class="tile-o" data-seg="${id}" data-v="${esc(x.v)}" aria-pressed="${String(x.v) === String(val)}"${captions ? " data-caption-style" : ""}${disabled ? " disabled" : ""}${x.title ? ` title="${esc(x.title)}"` : ""}>${x.prev}${esc(x.label)}</button>`).join("")}</div>`;
+    `<button type="button" class="tile-o" data-seg="${id}" data-v="${esc(x.v)}" aria-pressed="${String(x.v) === String(val)}"${captions ? " data-caption-style" : ""}${disabled ? " disabled" : ""}${x.title ? ` title="${esc(x.title)}"` : ""}>${x.prev}${esc(x.label)}${id === "o_layout" && String(x.v) === String(val) ? '<span class="tile-selected">✓ Selected</span>' : ""}</button>`).join("")}</div>`;
 }
 const closePicks = except => $$(".pick.open").forEach(p => { if (p !== except) { p.classList.remove("open"); p.querySelector(".pick-btn").setAttribute("aria-expanded", "false"); } });
 document.addEventListener("click", e => {
@@ -1460,7 +1462,8 @@ document.addEventListener("click", e => {
   if (!e.target.closest(".pick") || e.target.closest(".pick-new")) closePicks();
   const sg = e.target.closest("[data-seg]");
   if (sg && !sg.disabled) { $("#" + sg.dataset.seg).value = sg.dataset.v;
-    sg.parentElement.querySelectorAll("[data-seg]").forEach(b => b.setAttribute("aria-pressed", String(b === sg))); return; }
+    sg.parentElement.querySelectorAll("[data-seg]").forEach(b => { b.setAttribute("aria-pressed", String(b === sg)); b.querySelector(".tile-selected")?.remove(); });
+    if (sg.dataset.seg === "o_layout") sg.insertAdjacentHTML("beforeend", '<span class="tile-selected">✓ Selected</span>'); return; }
   const st = e.target.closest("[data-step]");
   if (st) { const i = $("#" + st.dataset.step), s = Number(i.step) || 1, d = Number(st.dataset.d);
     const v = Math.min(Number(i.max), Math.max(Number(i.min), (Number(i.value) || 0) + d * s)); i.value = v; }
@@ -1713,6 +1716,7 @@ function postPills(c) {
 }
 function clipHtml(j, c) {
   const m = `/media/${j.id}/`, a = `data-j="${j.id}" data-c="${esc(c.id)}"`;
+  const layoutLabel = c.layout ? (S.status.layouts?.[c.layout] || LAYOUT_SHORT[c.layout] || c.layout) : "";
   const body = c.status === "done" && c.local_deleted ? `<img src="${m}${esc(c.cover)}?v=${c.version}" alt="" loading="lazy"><span class="making" style="animation:none">Posted · local file removed</span>`
     : c.status === "done" ? `<img src="${m}${esc(c.cover)}?v=${c.version}" alt="" loading="lazy"><span class="veil"><span>${ic("play")}</span></span>`
     : c.status === "error" ? `<span class="making" style="animation:none;color:var(--bad);background:var(--bad-soft)">Could not make this clip. Open it to try again.</span>`
@@ -1722,7 +1726,7 @@ function clipHtml(j, c) {
     <button class="shot" data-act="openclip" ${a} aria-label="Open clip: ${esc(c.title || c.hook)}">${body}
       <span class="badge l ${scoreCls(c.score)}" title="AI score">${c.score || "Hand"}</span><span class="badge r">${fmt(c.end - c.start)}</span></button>
     <div class="clip-body">
-      <div class="row" style="gap:5px;flex-wrap:wrap"><span class="sbadge">${esc(categoryName(c.category))}</span><div class="hook">${esc(c.hook || "Untitled clip")}</div></div>
+      <div class="row" style="gap:5px;flex-wrap:wrap"><span class="sbadge">${esc(categoryName(c.category))}</span>${layoutLabel ? `<span class="sbadge" title="Layout used for this clip">Layout · ${esc(layoutLabel)}</span>` : ""}<div class="hook">${esc(c.hook || "Untitled clip")}</div></div>
       <div class="ttl">${esc(c.title)}</div>
       ${(c.hashtags || []).length ? `<div class="sub">${(c.hashtags || []).slice(0,5).map(h => "#" + esc(h)).join(" ")}</div>` : ""}
       ${postPills(c) ? `<div class="row" style="gap:4px">${postPills(c)}</div>` : ""}
