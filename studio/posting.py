@@ -406,8 +406,10 @@ def _stats_for(recent):
                     else:
                         snapshots.append(sample)
                     p["snapshots"] = snapshots[-10:]
-                    # Analytics reports lag behind live counts; refresh at most once per day per post.
-                    if time.time() - p.get("posted_at", time.time()) > 86400 and time.time() - p.get("analytics_checked_at", 0) > 86400:
+                    # Analytics reports lag behind live counts; retry transient/setup failures hourly, otherwise daily.
+                    checked = p.get("analytics_checked_at", 0)
+                    retry_after = 3600 if p.get("analytics_error") else 86400
+                    if time.time() - p.get("posted_at", time.time()) > 86400 and time.time() - checked > retry_after:
                         yesterday = time.strftime("%Y-%m-%d", time.gmtime(time.time() - 86400))
                         start = time.strftime("%Y-%m-%d", time.gmtime(p.get("posted_at", time.time())))
                         try:
@@ -638,10 +640,15 @@ def overview(posts_page=0) -> dict:
         row["avg_view_percent"] = round(sum(row["view_percent"]) / len(row["view_percent"]), 1) if row["view_percent"] else None
         row["avg_recent_views"] = round(sum(row["latest_views"]) / len(row["latest_views"])) if row["latest_views"] else None
         row.pop("view_percent", None); row.pop("latest_views", None)
+    recent_yt = [p for p in _posts if p.get("status") == "posted" and p.get("platform") == "youtube"
+                 and time.time() - p.get("posted_at", 0) < 30 * 86400]
+    last_analytics_error = max((p.get("analytics_checked_at", 0) for p in recent_yt if p.get("analytics_error")), default=0)
+    last_analytics_ok = max((p.get("analytics_checked_at", 0) for p in recent_yt if not p.get("analytics_error") and p.get("analytics_checked_at")), default=0)
     return {"paused": accounts.settings()["paused"], "creators": rows, "posts": show, "posts_total": posts_total,
             "posts_page": posts_page, "posts_per_page": POSTS_PER_PAGE,
             "local_pending": sum(1 for p in queue if p["status"] == "scheduled"), "daily": daily,
             "performance": sorted(by_category.values(), key=lambda x: (x["avg_view_percent"] or 0, x["avg_recent_views"] or x["views"]), reverse=True),
+            "analytics_setup_needed": bool(last_analytics_error and last_analytics_error >= last_analytics_ok),
             "alerts": alerts.configured(), "recording": len(live.active_mine())}
 
 
