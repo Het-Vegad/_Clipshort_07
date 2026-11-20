@@ -1578,6 +1578,18 @@ def add_posts(body: dict = Body(...)):
     return {"queued": len(made)}
 
 
+@app.post("/api/jobs/{jid}/queue-ready")
+def queue_ready_clips(jid: str, body: dict = Body(...)):
+    """Queue every finished local clip from a video to the selected posting accounts."""
+    job = _job_or_404(jid)
+    account_ids = [str(a) for a in body.get("accounts", [])][:20]
+    if not account_ids:
+        raise HTTPException(400, "Choose at least one connected account.")
+    clips = [c for c in job.get("clips", []) if c.get("status") == "done" and not c.get("local_deleted")]
+    queued = sum(len(posting.enqueue(job, clip, account_ids)) for clip in clips)
+    return {"queued": queued, "ready": len(clips)}
+
+
 @app.post("/api/posts/reschedule")
 def reschedule_posts():
     return {"rescheduled": posting.reschedule_all()}
