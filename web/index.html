@@ -1424,7 +1424,7 @@ function drawAdd(variant) {
       <div class="ob"><div class="ot cap-head"><span id="o_style_label">Caption style</span>
         <label><input type="checkbox" id="o_captions" data-caption-toggle ${c?.captions === false ? "" : "checked"}>Generate captions</label></div>
         ${choice("o_style", Object.entries(S.status.styles).map(([k, v]) => ({v:k, label:v, prev:capPrev(k)})), c?.style ?? "bounce", c?.captions === false)}</div>
-      <div class="ob"><div class="ot">Layout</div>${choice("o_layout", Object.entries({...LAYOUT_FALLBACK, ...(S.status.layouts || {})}).map(([k, v]) => ({v:k, label:LAYOUT_SHORT[k] || v, title:v, prev:`<span class="lay-prev ${esc(k)}"><span class="ph"><i></i></span></span>`})), c?.layout ?? "blur")}<div class="hint">Facecam layouts need a detected facecam; if none is found, the clip uses full-screen gameplay.</div></div>
+      <div class="ob"><div class="ot cap-head"><span>Layout</span><label><input type="checkbox" id="o_layout_variants">Generate layout versions</label></div>${choice("o_layout", Object.entries({...LAYOUT_FALLBACK, ...(S.status.layouts || {})}).map(([k, v]) => ({v:k, label:LAYOUT_SHORT[k] || v, title:v, prev:`<span class="lay-prev ${esc(k)}"><span class="ph"><i></i></span></span>`})), c?.layout ?? "blur")}<div class="hint">Off by default. When on, finished clips also get up to five new layout versions (100 extra clips maximum). Review versions before posting.</div><div class="hint">Facecam layouts need a detected facecam; if none is found, the clip uses full-screen gameplay.</div></div>
       <div class="ob"><div class="ot">Video quality</div><input type="hidden" id="o_quality" value="720"><div class="seg" role="group" aria-label="Video quality">
         <button type="button" data-seg="o_quality" data-v="720" aria-pressed="true">720p<small>Fast</small></button>
         <button type="button" data-seg="o_quality" data-v="1080" aria-pressed="false">1080p<small>Sharper, about 2x slower</small></button></div></div>
@@ -1501,6 +1501,32 @@ function jobOptions() {
    Each page keeps its own draft (Home, All videos and every creator), so a link typed for one creator never
    shows up under another. Links move out of the box into the list as soon as they are recognised. */
 const DRAFTS = {};
+const LAYOUT_PENDING_KEY = "clipshorts-layout-variants-v1", LAYOUT_VARIANT_NAMES = ["stacked", "split", "bottomcam", "wide", "action"], layoutVariantsBusy = new Set();
+function pendingLayoutJobs() { try { const x = JSON.parse(localStorage.getItem(LAYOUT_PENDING_KEY) || "[]"); return Array.isArray(x) ? x : []; } catch { return []; } }
+function rememberLayoutJob(id) { if (!id) return; try { const x = new Set(pendingLayoutJobs()); x.add(String(id)); localStorage.setItem(LAYOUT_PENDING_KEY, JSON.stringify([...x])); } catch {} }
+function forgetLayoutJob(id) { try { localStorage.setItem(LAYOUT_PENDING_KEY, JSON.stringify(pendingLayoutJobs().filter(x => x !== id))); } catch {} }
+async function processPendingLayoutJobs(jobs) {
+  for (const id of pendingLayoutJobs()) {
+    const j = jobs.find(x => x.id === id);
+    if (!j) { forgetLayoutJob(id); continue; }
+    if (j.status === "error") { forgetLayoutJob(id); continue; }
+    if (j.status !== "done" || layoutVariantsBusy.has(id)) continue;
+    const bases = j.clips.filter(c => c.status === "done" && !c.local_deleted && !c.variant_of), baseCount = bases.length;
+    if (!baseCount) { forgetLayoutJob(id); continue; }
+    const count = Math.max(1, Math.floor(100 / baseCount));
+    const candidates = LAYOUT_VARIANT_NAMES.filter(layout => bases.some(c => c.layout !== layout
+      && !j.clips.some(v => v.variant_of === c.id && v.layout === layout)));
+    const layouts = candidates.slice(0, count);
+    if (!layouts.length) { forgetLayoutJob(id); continue; }
+    layoutVariantsBusy.add(id);
+    try {
+      const result = await send(`/api/jobs/${encodeURIComponent(id)}/layout-variants`, {layouts});
+      forgetLayoutJob(id);
+      toast(`${result.queued} layout version${result.queued === 1 ? "" : "s"} queued for review; they will not be auto-posted.`, "ok");
+    } catch (err) { forgetLayoutJob(id); toast(`Could not create layout versions: ${err.message}`, "bad"); }
+    finally { layoutVariantsBusy.delete(id); }
+  }
+}
 const draftKey = () => creatorId() ? "c:" + creatorId() : S.view;
 const att = () => DRAFTS[draftKey()] ||= {files: [], links: [], note: null, busy: false, queued: false};
 const VIDEO_EXT = /\.(mp4|mov|mkv|webm|m4v|ts|flv)$/i;
@@ -1651,8 +1677,9 @@ async function sendBig(f, who, options) {
   };
   try {
     await Promise.all([worker(), worker()]);
-    await send(`/api/upload/${s.id}/finish`, {});
+    const result = await send(`/api/upload/${s.id}/finish`, {});
     f.pct = 100; drawAtt();
+    return result;
   } catch (e) {
     next = s.parts;                                   // stop the other sender
     api(`/api/upload/${s.id}`, {method: "DELETE"}).catch(() => {});
@@ -1668,7 +1695,7 @@ function sendFile(f, who, options) {
     x.upload.onprogress = e => { if (e.lengthComputable) { f.pct = Math.round(e.loaded / e.total * 100); drawAtt(); } };
     x.onload = () => {
       if (x.status === 401) { location.href = "/login"; return; }
-      if (x.status >= 200 && x.status < 300) return ok();
+      if (x.status >= 200 && x.status < 300) { try { return ok(JSON.parse(x.responseText)); } catch { return ok(null); } }
       let d = "Upload failed"; try { d = JSON.parse(x.responseText).detail || d; } catch {}
       fail(new Error(typeof d === "string" ? d : "Upload failed"));
     };
@@ -1693,16 +1720,16 @@ async function makeClips() {
   }
   A.busy = true; drawAtt();
   let started = 0, failed = 0;
-  const who = targetCreator(), opts = jobOptions();
+  const who = targetCreator(), opts = jobOptions(), addLayoutVersions = $("#o_layout_variants")?.checked;
   for (const l of A.links.filter(x => x.state === "ok")) {
     l.sending = true; drawAtt();
-    try { await send("/api/jobs", {url: l.url, options: opts, creator: who}); l.state = "done"; started++; }
+    try { const job = await send("/api/jobs", {url: l.url, options: opts, creator: who}); if (addLayoutVersions) rememberLayoutJob(job.id); l.state = "done"; started++; }
     catch (e) { l.state = "bad"; l.msg = e.message; failed++; }
     l.sending = false; drawAtt();
   }
   for (const f of A.files) {
     f.state = "up"; f.pct = 0; drawAtt();
-    try { await sendFile(f, who, opts); f.state = "done"; started++; }
+    try { const job = await sendFile(f, who, opts); if (addLayoutVersions) rememberLayoutJob(job?.id); f.state = "done"; started++; }
     catch (e) { f.state = "error"; f.err = e.message; failed++; }
     drawAtt();
   }
@@ -2315,6 +2342,7 @@ async function tick() {
     const fresh = !!got.jobs, stale = Date.now() - (S.ovAt || 0) > 20000;
     S.syncV = got.v;
     if (!fresh) {                                   // nothing of ours changed on the server
+      await processPendingLayoutJobs(S.jobs);
       if (S.view === "overview" && stale) { S.overview = await fetchOverview(); S.ovAt = Date.now(); render(); }
       return;
     }
@@ -2322,6 +2350,7 @@ async function tick() {
     // a server from before multi-channel support sends only `channel`: show it as that platform's channel
     creators.forEach(c => { if (!c.channels) { const u = c.channel || "", k = /youtu/i.test(u) ? "youtube" : /twitch/i.test(u) ? "twitch" : /kick/i.test(u) ? "kick" : ""; c.channels = k ? {[k]: u} : {}; } });
     S.jobs = jobs; S.creators = creators; S.accounts = accounts;
+    await processPendingLayoutJobs(jobs);
     if (got.ai) S.status.ai = got.ai;
     if (got.unread != null) S.status.unread = got.unread;
     if (S.view === "overview") { S.overview = await fetchOverview(); S.ovAt = Date.now(); }
