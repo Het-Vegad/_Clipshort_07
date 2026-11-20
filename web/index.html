@@ -2085,7 +2085,7 @@ function aiHints() {
   $("#ai_keys").placeholder = pv.needs_key ? "Paste one or more keys, one per line. New keys are added to the saved pool." : "Not needed for this service";
   const hints = same ? (k.key_hints || []).map((h, i) => `Key ${i + 1} · ••••${esc(h)}`).join(" · ") : "";
   const savedCount = same ? k.key_count : 0;
-  $("#ai_keyhint").innerHTML = `${savedCount ? `${savedCount} saved key${savedCount === 1 ? "" : "s"}${hints ? `: ${hints}` : ""}. ` : ""}${pv.key_url ? `${pv.needs_key ? "Get a key at" : "Set it up at"} <a href="${esc(pv.key_url)}" target="_blank" rel="noopener">${esc(pv.key_url.replace("https://", ""))}</a>. ` : ""}Paste up to 20 keys; they stay on this server and are never shown again.`;
+  $("#ai_keyhint").innerHTML = `${savedCount ? `${savedCount} saved key${savedCount === 1 ? "" : "s"}${hints ? `: ${hints}` : ""}. ` : ""}${pv.key_url ? `${pv.needs_key ? "Get a key at" : "Set it up at"} <a href="${esc(pv.key_url)}" target="_blank" rel="noopener">${esc(pv.key_url.replace("https://", ""))}</a>. ` : ""}Paste up to 100 keys; they stay on this server and are never shown again.`;
   $("#ai_model").placeholder = pv.example ? "For example " + pv.example : "The model id, exactly as the service names it";
   $("#ai_base").placeholder = pv.address || "http://127.0.0.1:1234/v1";
   $("#ai_basewrap").hidden = pv.id !== "custom" && !(same && k.base_url);
