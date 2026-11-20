@@ -340,9 +340,10 @@ def _yt_token(acc) -> str:
 
 def youtube_upload(acc, path: Path, title: str, description: str, tags: list, privacy: str):
     token = _yt_token(acc)
+    status = {"privacyStatus": privacy, "selfDeclaredMadeForKids": False}
     meta = {"snippet": {"title": re.sub(r"[<>]", "", title)[:100] or "Clip", "description": re.sub(r"[<>]", "", description)[:4900],
                         "tags": tags[:15], "categoryId": "20"},
-            "status": {"privacyStatus": privacy, "selfDeclaredMadeForKids": False}}
+            "status": status}
     size = path.stat().st_size
     start = _check(httpx.post("https://www.googleapis.com/upload/youtube/v3/videos",
                               params={"uploadType": "resumable", "part": "snippet,status"}, json=meta,
@@ -362,8 +363,27 @@ def youtube_views(acc, ids: list) -> dict:
                              params={"part": "statistics", "id": ",".join(ids[i:i + 50])},
                              headers={"Authorization": f"Bearer {_yt_token(acc)}"}, timeout=30), "Reading YouTube views").json()
         for it in r.get("items", []):
-            out[it["id"]] = int(it["statistics"].get("viewCount", 0))
+            s = it.get("statistics", {})
+            out[it["id"]] = {"views": int(s.get("viewCount", 0)),
+                              "likes": int(s.get("likeCount", 0)),
+                              "comments": int(s.get("commentCount", 0))}
     return out
+
+
+def youtube_analytics(acc, video_id: str, start_date: str, end_date: str) -> list:
+    """Daily channel analytics for a video owned by the connected channel."""
+    if start_date > end_date:
+        return []
+    data = _check(httpx.get("https://youtubeanalytics.googleapis.com/v2/reports",
+                            params={"ids": "channel==MINE", "startDate": start_date, "endDate": end_date,
+                                    "metrics": "views,likes,comments,estimatedMinutesWatched,averageViewDuration,averageViewPercentage",
+                                    "dimensions": "day", "filters": f"video=={video_id}", "sort": "day"},
+                            headers={"Authorization": f"Bearer {_yt_token(acc)}"}, timeout=30),
+                  "Reading YouTube watch analytics").json()
+    return [{"day": row[0], "views": int(row[1] or 0), "likes": int(row[2] or 0),
+             "comments": int(row[3] or 0), "watch_minutes": float(row[4] or 0),
+             "avg_view_seconds": float(row[5] or 0), "avg_view_percent": float(row[6] or 0)}
+            for row in data.get("rows", [])]
 
 
 # ------------------------------------------------------------------ Instagram (Instagram Login, professional accounts)

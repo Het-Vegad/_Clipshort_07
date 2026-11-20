@@ -113,6 +113,19 @@ with ctx.as_user(u1.id):
 with ctx.as_user(u2.id):
     check("another user sees none of it", usage.summary({})["calls_total"] == 0)
 
+# ---- the image-capable model is independent from the text model
+from unittest.mock import patch
+with patch.object(ai, "current", return_value={"provider": "groq", "models": ["text-model"], "vision_model": "vision-model",
+                                                  "base_url": "https://api.groq.com/openai/v1", "key": "test-key-123456"}), \
+     patch.object(ai, "models", return_value=["text-model"]), \
+     patch.object(ai, "provider", return_value="groq"), \
+     patch.object(ai, "base_url", return_value="https://api.groq.com/openai/v1"), \
+     patch.object(ai, "key", return_value="test-key-123456"):
+    seen.clear()
+    answer, _sent, _wrote = ai.see("review this", b"jpeg bytes")
+    check("vision calls use the separately selected image model", seen[0][1]["model"] == "vision-model")
+    check("vision frames are sent as image input", seen[0][1]["messages"][0]["content"][1]["image_url"]["url"].startswith("data:image/jpeg;base64,"))
+
 print("ALL PASSED" if not fails else f"{len(fails)} failed")
 import shutil  # noqa: E402
 db.engine.dispose()

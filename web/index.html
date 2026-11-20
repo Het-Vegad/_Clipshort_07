@@ -3,17 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>PeakCut</title>
-<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg">
+<title>ClipShorts</title>
+<link rel="icon" type="image/svg+xml" href="/brand/favicon.svg?v=clipshorts2">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&family=Inter:wght@300&family=Archivo+Black&family=Anton&family=Poppins:wght@800&display=swap" rel="stylesheet">
 <style>
 :root{
-  --brand:#FF8B33;--brand-press:#F27A1F;--brand-ink:#2A1A12;--brand-soft:#FFF2E8;--brand-line:#FFD9BC;--brand-deep:#A9480A;
-  --frame:#1E1612;--frame-2:#2C221D;--frame-line:rgba(255,255,255,.08);--frame-text:#F4EEEA;--frame-dim:#A99A91;
-  --bg:#FFFFFF;--muted:#F7F4F1;--line:#EEE8E4;--line-2:#E1D9D3;
-  --text:#211813;--dim:#6D6159;--faint:#A0948C;
+  --brand:#16D6E5;--brand-press:#0BBACD;--brand-ink:#101826;--brand-soft:#E7FBFF;--brand-line:#B9EEF2;--brand-deep:#08758A;
+  --frame:#101826;--frame-2:#182338;--frame-line:rgba(255,255,255,.08);--frame-text:#EAF2FA;--frame-dim:#9DAFC2;
+  --bg:#FFFFFF;--muted:#F4F7FB;--line:#E5EBF2;--line-2:#D7E0EA;
+  --text:#172337;--dim:#66748A;--faint:#94A1B3;
   --good:#0F8A57;--good-soft:#E6F6EE;--bad:#D3343F;--bad-soft:#FDECEE;--live:#E5323F;
   --r-lg:16px;--r:12px;--r-sm:8px;
   color-scheme:light;
@@ -50,7 +50,7 @@ svg{width:18px;height:18px;flex:none;fill:currentColor}
 .label{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .count{font-size:11px;font-weight:600;padding:2px 8px;border-radius:999px;background:rgba(255,255,255,.1);color:var(--frame-text);white-space:nowrap}
 .nav-item.on .count{background:rgba(42,26,18,.14);color:var(--brand-ink)}
-.avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,139,51,.18);color:#FFB27A;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;overflow:hidden}
+.avatar{width:26px;height:26px;border-radius:50%;background:rgba(255,139,51,.18);color:#A895FF;display:grid;place-items:center;font-size:11px;font-weight:700;flex:none;overflow:hidden}
 img.avatar{object-fit:cover;background:rgba(255,255,255,.08)}
 .tav{width:34px;height:34px;border-radius:50%;object-fit:cover;flex:none;background:var(--muted)}
 #title{display:flex;align-items:center;gap:10px}
@@ -70,7 +70,7 @@ img.avatar{object-fit:cover;background:rgba(255,255,255,.08)}
 .plans-btn{margin-top:10px;width:100%;background:var(--frame-text);color:var(--brand-ink);border:0}
 .scrim{display:none}
 
-main{background:var(--bg);margin:8px 8px 8px 0;border-radius:var(--r-lg);height:calc(100vh - 16px);overflow-y:auto;min-width:0;scrollbar-gutter:stable}
+main{background:var(--bg);margin:8px 16px 8px 0;border-radius:var(--r-lg);height:calc(100vh - 16px);overflow-y:auto;min-width:0;scrollbar-gutter:stable}
 .topbar{position:sticky;top:0;z-index:5;background:var(--bg);display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding:10px 28px;min-height:54px;border-bottom:1px solid transparent;transition:border-color .2s ease}
 .topbar.stuck{border-color:var(--line)}
 #vbanner:empty{display:none}
@@ -110,7 +110,7 @@ main{background:var(--bg);margin:8px 8px 8px 0;border-radius:var(--r-lg);height:
 .rdot{flex:none;width:9px;height:9px;border-radius:50%;background:#fff}
 .btn .rdot.on{background:#E5323F;animation:pulse 1.3s infinite}
 /* live stream panel */
-.stream{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(250px,1fr);gap:14px;background:#1E1612;border-radius:16px;padding:12px;margin-bottom:22px;color:#EFE5DE;animation:rise .3s ease both}
+.stream{display:grid;grid-template-columns:minmax(0,1.65fr) minmax(250px,1fr);gap:14px;background:#101826;border-radius:16px;padding:12px;margin-bottom:22px;color:#EFE5DE;animation:rise .3s ease both}
 .stream .player{position:relative;aspect-ratio:16/9;border-radius:10px;overflow:hidden;background:#000}
 .stream iframe{position:absolute;inset:0;width:100%;height:100%;border:0}
 .noembed{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:8px;padding:20px;text-align:center;background:#120D0A;color:#EFE5DE}
@@ -209,6 +209,7 @@ img.avatar.ring{background:transparent}
 .btn.icon{width:32px;padding:0}
 .btn.lg{height:44px;padding:0 20px;font-size:15px}
 .btn:disabled{opacity:.45;cursor:default;pointer-events:none}
+.schedule-status:disabled{opacity:1;cursor:default;pointer-events:auto}
 
 /* ---------- fields */
 :where(input:not([type=checkbox],[type=radio],[type=file],[type=range]),select,textarea){width:100%;height:40px;padding:0 12px;background:#fff;border:1px solid var(--line-2);border-radius:var(--r-sm);min-width:0;outline:none;transition:border-color .15s ease}
@@ -268,7 +269,7 @@ label.ck input{accent-color:var(--brand);margin:0}
 .hero h2{font-size:clamp(21px,5.2vw,28px);font-weight:700;letter-spacing:-.03em;color:var(--brand-ink);line-height:1.2;text-wrap:balance}
 .hero>p{color:var(--dim);margin:8px auto 22px;max-width:520px;font-size:15px}
 .composer{max-width:760px;margin:0 auto;background:#fff;border:1px solid var(--line-2);border-radius:var(--r-lg);text-align:left;transition:background-color .15s ease,border-color .15s ease}
-.composer:has(#url:focus){border-color:#FFB27A}
+.composer:has(#url:focus){border-color:#A895FF}
 .composer.compact{max-width:none;margin-bottom:28px;background:var(--muted)}
 .composer.over{background:var(--brand-soft);border-color:var(--brand)}
 .composer :focus-visible{outline:none}
@@ -298,7 +299,7 @@ label.ck input{accent-color:var(--brand);margin:0}
 .att-in{display:flex;flex-direction:column;gap:8px;padding:0 12px 8px}
 .lp{display:flex;align-items:center;gap:12px;padding:8px;border-radius:12px;background:var(--muted);animation:rise .28s ease both}
 .composer.compact .lp{background:#fff}
-.lp .th{position:relative;flex:none;width:112px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#2A1A12}
+.lp .th{position:relative;flex:none;width:112px;aspect-ratio:16/9;border-radius:8px;overflow:hidden;background:#101826}
 .lp .th img{width:100%;height:100%;object-fit:cover;display:block}
 .lp .th .du{position:absolute;right:5px;bottom:5px;background:rgba(20,12,8,.82);color:#fff;font-size:11px;font-weight:600;padding:1px 6px;border-radius:6px}
 .lp .tx{min-width:0;flex:1}
@@ -341,17 +342,17 @@ label.ck input{accent-color:var(--brand);margin:0}
 .pick{position:relative}
 .pick .car{width:13px;height:13px;transition:transform .15s ease}
 .pick.open .car{transform:rotate(180deg)}
-.pick-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:230px;max-height:280px;overflow:auto;background:#2A1A12;border-radius:12px;padding:6px;
+.pick-menu{position:absolute;top:calc(100% + 6px);left:0;z-index:30;min-width:230px;max-height:280px;overflow:auto;background:#101826;border-radius:12px;padding:6px;
   opacity:0;visibility:hidden;transform:translateY(-6px);pointer-events:none;transition:opacity .18s ease,transform .18s ease,visibility .18s}
 .pick.open .pick-menu{opacity:1;visibility:visible;transform:none;pointer-events:auto}
 .pick-opt{display:flex;align-items:center;gap:10px;width:100%;padding:8px 10px;border:0;background:transparent;color:#E9DED6;border-radius:8px;font-size:13px;font-weight:500;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
 .pick-opt:hover,.pick-opt:focus-visible{background:rgba(255,255,255,.08);color:#fff}
-.pick-new{display:flex;align-items:center;gap:10px;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 8px 8px;background:transparent;color:#FFB27A;font-size:13px;font-weight:600;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
+.pick-new{display:flex;align-items:center;gap:10px;width:100%;margin-top:4px;padding:8px 10px;border:0;border-top:1px solid rgba(255,255,255,.08);border-radius:0 0 8px 8px;background:transparent;color:#A895FF;font-size:13px;font-weight:600;text-align:left;cursor:pointer;transition:background-color .15s ease,color .15s ease}
 .pick-new:hover,.pick-new:focus-visible{background:rgba(255,139,51,.14);color:#FFC79D}
 .pick-new .av{background:rgba(255,139,51,.18)}
 .pick-empty{margin:6px 10px 4px;font-size:12px;line-height:1.45;color:#B9A597}
 img.av{object-fit:cover}
-.pick-opt .av,.pick-new .av{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;background:rgba(255,139,51,.18);color:#FFB27A}
+.pick-opt .av,.pick-new .av{flex:none;width:24px;height:24px;border-radius:7px;display:grid;place-items:center;font-size:11px;font-weight:700;background:rgba(255,139,51,.18);color:#A895FF}
 .pick-new .av svg,.pick-opt .av svg{width:14px;height:14px}
 .pick-opt .tick{margin-left:auto;width:15px;height:15px;color:var(--brand);visibility:hidden}
 .pick-opt[aria-selected=true] .tick{visibility:visible}
@@ -366,7 +367,7 @@ img.av{object-fit:cover}
 .ot.cap-head{display:flex;align-items:center;justify-content:space-between;gap:4px 8px;flex-wrap:wrap}
 .cap-head label{display:inline-flex;align-items:center;gap:6px;cursor:pointer;color:var(--text)}
 .cap-head input{accent-color:var(--brand);margin:0}
-.nsteps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px}
+.nsteps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:8px}
 .nstep{display:flex;flex-direction:column;gap:6px;background:#fff;border-radius:10px;padding:10px 10px 8px}
 .composer.compact .nstep{background:var(--muted)}
 .nstep>span{font-size:12px;color:var(--faint)}
@@ -383,14 +384,15 @@ img.av{object-fit:cover}
 .composer.compact .tile-o{background:var(--muted)}
 .tile-o:enabled:hover,.tile-o:focus-visible{background:#EDE3DB;color:var(--text)}
 .tile-o[aria-pressed=true]{background:var(--brand-soft);color:var(--brand-ink)}
-.cap-prev{height:54px;border-radius:7px;background:#1E1612;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;font-size:14px;line-height:1;color:#fff;letter-spacing:0;-webkit-text-stroke:1px #000;paint-order:stroke fill}
+.cap-prev{height:54px;border-radius:7px;background:#101826;display:flex;align-items:center;justify-content:center;white-space:nowrap;overflow:hidden;font-size:14px;line-height:1;color:#fff;letter-spacing:0;-webkit-text-stroke:1px #000;paint-order:stroke fill}
 .cap-prev b{font-weight:inherit}
-.lay-prev{height:54px;border-radius:7px;background:#1E1612;display:grid;place-items:center}
+.lay-prev{height:54px;border-radius:7px;background:#101826;display:grid;place-items:center}
 .lay-prev .ph{position:relative;width:28px;height:48px;border-radius:4px;overflow:hidden;background:#4A3428}
 .lay-prev .ph::before{content:"";position:absolute;inset:0;background:linear-gradient(160deg,#B4643A,#5E3A2A);filter:blur(3px);opacity:.75}
-.lay-prev .ph i{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:16px;background:linear-gradient(135deg,#FF8B33,#FFB27A)}
+.lay-prev .ph i{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:16px;background:linear-gradient(135deg,#16D6E5,#A895FF)}
 .lay-prev.zoom .ph i{left:-6px;right:-6px;height:24px}
 .lay-prev.crop .ph i{left:0;right:0;top:0;height:100%;transform:none}
+.lay-prev.reaction .ph i{left:0;right:0;top:0;height:100%;transform:none;box-shadow:inset -9px 0 0 #ffdc68}
 .seg{display:flex;gap:4px;background:#fff;border-radius:10px;padding:4px}
 .composer.compact .seg{background:var(--muted)}
 .seg button{flex:1;display:flex;flex-direction:column;align-items:center;gap:1px;padding:7px 6px;border:0;border-radius:7px;background:transparent;color:var(--dim);font-size:13px;font-weight:600;cursor:pointer;transition:background-color .15s ease,color .15s ease}
@@ -573,6 +575,17 @@ img.av{object-fit:cover}
 /* ---------- tables + logs */
 .scroll{overflow-x:auto}
 table{width:100%;border-collapse:collapse}
+.post-queue-card{width:min(100%,1080px)}
+.post-queue-table{width:100%;table-layout:fixed}
+.post-queue-table th:nth-child(1),.post-queue-table td:nth-child(1){width:140px}
+.post-queue-table th:nth-child(2),.post-queue-table td:nth-child(2){width:250px}
+.post-queue-table th:nth-child(3),.post-queue-table td:nth-child(3){width:120px}
+.post-queue-table th:nth-child(4),.post-queue-table td:nth-child(4){width:130px}
+.post-queue-table th:nth-child(5),.post-queue-table td:nth-child(5){width:70px}
+.post-queue-table th:nth-child(6),.post-queue-table td:nth-child(6){width:280px}
+.post-queue-table td.c-main{white-space:normal}
+.post-pages{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:12px;color:var(--dim);font-size:13px}
+.post-pages .row{gap:8px}
 th{text-align:left;font-size:12px;font-weight:500;color:var(--faint);padding:0 10px 10px;white-space:nowrap}
 td{padding:12px 10px;border-top:1px solid var(--line);vertical-align:middle;overflow-wrap:anywhere}
 td.num,th.num{text-align:right;font-variant-numeric:tabular-nums}
@@ -711,13 +724,14 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 /* ---------- motion and hover: colour only, never size */
 .btn,.nav-item,.chip,.step,.tabbtn,.icon-btn,label.ck,.clip,a.lnk,.ai-card,.veil span,td,label.sw input{transition:background-color .15s ease,border-color .15s ease,color .15s ease}
 .btn:hover{background:var(--muted);border-color:#D4CAC3}
-.btn.primary:hover{background:#FF9A4C;border-color:#FF9A4C}
+.btn.schedule-status:disabled:hover{opacity:1;background:var(--brand);border-color:var(--brand);color:var(--brand-ink)}
+.btn.primary:hover{background:#72ECF2;border-color:#72ECF2}
 .btn.dark:hover{background:#3A2C25;border-color:#3A2C25}
 .btn.danger:hover{background:#FADDE0}
 .btn.ghost:hover{background:var(--muted);border-color:transparent;color:var(--text)}
 
 .nav-item:hover{background:var(--frame-2)}
-.nav-item.on:hover{background:#FF9A4C}
+.nav-item.on:hover{background:#72ECF2}
 .icon-btn:hover{background:var(--muted);color:var(--text)}
 .side .icon-btn:hover{background:var(--frame-2);color:var(--frame-text)}
 .chip:hover{background:var(--muted);color:var(--text)}
@@ -726,7 +740,7 @@ input[type=range]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;bac
 .tabbtn:hover{color:var(--brand-ink);background:var(--muted)}
 label.ck:hover{border-color:#D4CAC3}
 .clip:hover{border-color:var(--line-2)}
-.shot:hover .veil span{background:#FF9A4C}
+.shot:hover .veil span{background:#72ECF2}
 a.lnk:hover{color:var(--brand-deep)}
 tr:hover>td{background:#FCFAF8}
 .ai-card:hover{background:#352a24}
@@ -800,6 +814,15 @@ dialog[open]{animation:fadein .16s ease}
   .utabs{display:flex}.utabs .tabbtn{flex:1;justify-content:center;padding:0 8px}
   .card{padding:16px}.card-head{flex-wrap:wrap;gap:10px}.card-head .btn{width:100%;justify-content:center}
   .scroll table:not(.stack){min-width:560px}
+  .scroll .post-queue-table{min-width:0}
+  table.post-queue-table,table.post-queue-table tbody{display:block}
+  table.post-queue-table tr:first-child{display:none}
+  table.post-queue-table tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-top:1px solid var(--line)}
+  table.post-queue-table td{display:flex;flex-direction:column;gap:2px;padding:0;border:0;font-size:13px;text-align:left!important;width:auto!important}
+  table.post-queue-table td::before{content:attr(data-l);font-size:11px;color:var(--faint)}
+  table.post-queue-table td.c-main{grid-column:1/-1;order:-1;font-weight:600;color:var(--brand-ink)}
+  table.post-queue-table td.c-main::before,table.post-queue-table td.c-act::before{display:none}
+  table.post-queue-table td.c-act{grid-column:1/-1}
   table.stack,table.stack tbody{display:block}
   table.stack tr:first-child{display:none}
   table.stack tr{display:grid;grid-template-columns:1fr auto;gap:6px 12px;padding:12px 0;border-top:1px solid var(--line)}
@@ -817,7 +840,7 @@ dialog[open]{animation:fadein .16s ease}
 <body>
 <div class="app" id="app">
   <aside class="side" aria-label="Sidebar">
-    <div class="side-head"><img class="logo" src="/brand/logo-light.svg" alt="PeakCut"><img class="mark" src="/brand/favicon.svg" alt="PeakCut">
+    <div class="side-head"><img class="logo" src="/brand/logo-light.svg?v=clipshorts2" alt="ClipShorts"><img class="mark" src="/brand/favicon.svg?v=clipshorts2" alt="ClipShorts">
       <button class="icon-btn collapse" data-act="collapse" id="collapseBtn" aria-label="Collapse sidebar"></button></div>
     <nav class="nav" id="nav" aria-label="Main"></nav>
     <div class="side-foot" id="foot"></div>
@@ -917,7 +940,7 @@ const send = (path, body, method = "POST") => api(path, {method, headers:{"Conte
 function toast(msg, kind = "") {
   if (!msg) return;
   const t = document.createElement("div"); t.className = "toast " + kind; t.textContent = msg;
-  if (kind === "bad") { const r = document.createElement("button"); r.className = "rep"; r.textContent = "Report"; r.onclick = () => { t.remove(); openFeedback("bug", msg); }; t.append(r); }
+  if (kind === "bad") { const r = document.createElement("button"); r.className = "rep"; r.textContent = "Copy fix"; r.onclick = () => { t.remove(); copyErrorHelp(msg); }; t.append(r); }
   $("#toasts").append(t); setTimeout(() => t.remove(), kind === "bad" ? 7000 : 3200);
 }
 const cache = new WeakMap();
@@ -938,15 +961,15 @@ function startTour() {
   if (S.view !== "overview") go("overview");
   // sel: what the step points at.  side: it lives in the sidebar (opened for the step on phones).  dock: where the card sits on phones.
   const steps = [
-    {t: "Welcome to PeakCut", x: "Long videos and live streams go in, captioned vertical clips come out. Here is a quick look around.",
+    {t: "Welcome to ClipShorts", x: "Long videos and live streams go in, captioned vertical clips come out. Here is a quick look around.",
      chips: [["link", "Paste a link"], ["scissors", "Get clips", 1], ["radio", "Live streams"], ["send", "Post them"]]},
-    {t: "Start with any video", x: "Paste a YouTube, Twitch or Kick link here, or upload a file. PeakCut finds the best moments and makes each one a short with captions.",
+    {t: "Start with any video", x: "Paste a YouTube, Twitch or Kick link here, or upload a file. ClipShorts finds the best moments and makes each one a short with captions.",
      sel: "#addform", dock: "bottom", chips: [["link", "YouTube"], ["link", "Twitch"], ["link", "Kick"], ["up", "Upload", 1]]},
     {t: "Your day at a glance", x: "Home shows what is recording, how many clips were made and posted today, and what is waiting to go out.",
      sel: "#ov .tiles", dock: "bottom", chips: [["radio", "Recording"], ["scissors", "Clips today", 1], ["send", "Posted"], ["clock", "Waiting"]]},
     {t: "Every video in one place", x: "All videos lists everything you have processed. Open a video to see its clips, trim them, change the captions or download them.",
      sel: '#nav [data-v="library"]', side: 1, dock: "bottom", chips: [["film", "All videos", 1], ["play", "Preview"], ["sliders", "Edit"], ["down", "Download"]]},
-    {t: "Add the creators you clip", x: "Give each creator a workspace with their channels. PeakCut can record them when they go live and clip the highlights as they happen.",
+    {t: "Add the creators you clip", x: "Give each creator a workspace with their channels. ClipShorts can record them when they go live and clip the highlights as they happen.",
      sel: '#nav [data-act="newcreator"]', side: 1, dock: "bottom", chips: [["plusc", "New creator", 1], ["radio", "Record live"], ["bolt", "Clip highlights"]]},
     {t: "The AI picks the moments", x: "This shows which AI this server uses and how much it has worked today. Open it to see what the AI was used for.",
      sel: "#foot .ai-card", side: 1, dock: "top", chips: [["bolt", "AI", 1], ["chart", "See usage"]]},
@@ -1054,7 +1077,7 @@ function startTour() {
 
 /* ============================================================ state */
 const S = {status:{styles:{}, layouts:{}}, jobs:[], creators:[], accounts:[], overview:null, settings:null,
-           view:"overview", ctab:"clips"};
+           view:"overview", ctab:"clips", postPage:0};
 const D = {jid:null, cid:null, sig:""};
 const creatorId = () => S.view.startsWith("c:") ? S.view.slice(2) : null;
 const creator = () => S.creators.find(c => c.id === creatorId());
@@ -1102,7 +1125,7 @@ function drawStream() {
     pl.dataset.src = src;
     const ipHost = /^[\d.]+$|^\[/.test(location.hostname);
     pl.innerHTML = k === "twitch" && ipHost
-      ? `<div class="noembed">${platLogo(k)}<b>Twitch only plays inside sites with a web address</b><span>It will play here once PeakCut is on its domain, or open PeakCut at localhost instead of ${esc(location.hostname)}.</span><a class="btn sm" href="${esc(p.channel)}" target="_blank" rel="noopener">Watch on Twitch ${ic("upright")}</a></div>`
+      ? `<div class="noembed">${platLogo(k)}<b>Twitch only plays inside sites with a web address</b><span>It will play here once ClipShorts is on its domain, or open ClipShorts at localhost instead of ${esc(location.hostname)}.</span><a class="btn sm" href="${esc(p.channel)}" target="_blank" rel="noopener">Watch on Twitch ${ic("upright")}</a></div>`
       : src ? `<iframe src="${src}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="${PLAT[k].name} live stream"></iframe>` : "";
   }
   const stats = [p.viewers != null ? [fmtK(p.viewers), "watching"] : null, p.started ? [since(p.started), "live for"] : null,
@@ -1114,7 +1137,7 @@ function drawStream() {
     ${stats.length ? `<div class="sstats">${stats.map(([v, l]) => `<div><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join("")}</div>` : ""}
     <div class="cta">${rec
       ? `<button class="btn danger" data-act="stoplive" data-j="${esc(rec)}">${ic("stop")}Stop recording</button><small>Recording now. Clips appear below as they're made.</small>`
-      : `<button class="btn primary" data-act="golive" data-url="${esc(p.channel)}"><span class="rdot"></span>Record this stream</button><small>PeakCut watches it and clips the best moments as they happen.</small>`}</div>`);
+      : `<button class="btn primary" data-act="golive" data-url="${esc(p.channel)}"><span class="rdot"></span>Record this stream</button><small>ClipShorts watches it and clips the best moments as they happen.</small>`}</div>`);
 }
 function liveOn(c) { return Object.entries(c.profiles || {}).filter(([k, p]) => p.live && c.channels?.[k] === p.channel).sort(([, p]) => p.channel === c.channel ? -1 : 1); }
 function statusBadge(c) {
@@ -1126,7 +1149,7 @@ function statusBadge(c) {
 }
 const cav = c => { const r = c.live_job || liveOn(c).length ? " ring" : "";
   return c.profile?.pic && c.profile.channel === c.channel ? `<img class="avatar${r}" src="${avatarUrl(c)}" alt="">` : `<span class="avatar${r}">${esc((c.name || "?")[0].toUpperCase())}</span>`; };
-const GRADS = [["#FF8B33", "#FFB27A"], ["#7C5CFF", "#B9A7FF"], ["#0EA5E9", "#7DD3FC"], ["#10B981", "#6EE7B7"],
+const GRADS = [["#16D6E5", "#A895FF"], ["#7C5CFF", "#B9A7FF"], ["#0EA5E9", "#7DD3FC"], ["#10B981", "#6EE7B7"],
                ["#F43F5E", "#FDA4AF"], ["#F59E0B", "#FDE68A"], ["#EC4899", "#F9A8D4"], ["#14B8A6", "#99F6E4"]];
 function meAvatar(u) {
   if (u.photo) return `<img class="avatar me-pic" src="/api/me/photo?v=${u.photo}" alt="">`;
@@ -1219,15 +1242,25 @@ async function openFeedback(kind = "bug", context = "") {
   if (context) { try { await navigator.clipboard.writeText(context); toast("The problem is copied. Paste it in your message.", "ok"); } catch {} }
   window.open(url, "_blank", "noopener");
 }
+async function copyErrorHelp(error) {
+  let summary = "";
+  try {
+    const result = await send("/api/error/explain", {error: String(error || "").slice(0, 1200)});
+    summary = result.summary || "";
+  } catch {}
+  const text = `${String(error || "ClipShorts error").slice(0, 500)}\n\n${summary || "Check the error details and settings, then retry. If it persists, include this message when asking for help."}`;
+  try { await navigator.clipboard.writeText(text); toast("Error and suggested fix copied", "ok"); }
+  catch { toast("Clipboard access is unavailable. Select and copy the error details."); }
+}
 function updateHow() {
   const up = S.status?.update, d = $("#formdlg"); if (!up || d.open) return;
-  const ai = "Update this PeakCut folder to the latest version from GitHub (git pull), keep my .env and data folder as they are, install any new requirements, and restart PeakCut. Read AGENTS.md first: if this folder's path is long or inside a temporary or assistant workspace, ask me before moving it to a short folder like C:\\peakcut, and never delete anything without asking.";
+  const ai = "Review the upstream PeakCut changes on GitHub before updating this customized ClipShorts build. Keep my .env and data folder as they are, check AGENTS.md, install any new requirements, and restart only after reviewing local modifications for conflicts.";
   const cmd = (label, text) => `<h3>${label}</h3><div class="cmd"><code>${esc(text)}</code><button class="btn sm" type="button" data-act="copytext" data-t="${esc(text)}">${ic("copy")}Copy</button></div>`;
-  d.innerHTML = `<form method="dialog" class="dlg upd"><h2>${up.restart ? "The new version is ready" : "A new version of PeakCut is out"}</h2>
-    <p class="help">${up.restart ? "The new files are already in the PeakCut folder. <b>Close PeakCut and start it again</b> to use them." : `You're on <b>${esc(up.current)}</b>. ${up.behind ? `${up.behind} update${up.behind === 1 ? " has" : "s have"} been added since.` : "Newer changes have been added since."}`} Your settings, keys and clips stay as they are.</p>
+  d.innerHTML = `<form method="dialog" class="dlg upd"><h2>${up.restart ? "Upstream files are ready" : "Upstream PeakCut changes are available"}</h2>
+    <p class="help">${up.restart ? "Updated source files are in the ClipShorts folder. <b>Review your local changes before restarting</b>; upstream updates can replace custom changes." : `You're on <b>${esc(up.current)}</b>. ${up.behind ? `${up.behind} upstream change${up.behind === 1 ? " has" : "s have"} been added since.` : "Newer upstream changes are available."} Review them before merging. Your settings, keys and clips stay as they are.`}</p>
     ${up.notes.length ? `<ul>${up.notes.map(n => `<li>${esc(n.title)} <small>${esc(n.date)}</small></li>`).join("")}</ul>` : ""}
-    ${up.restart ? "" : cmd("Ask your AI coding assistant (Claude, Cursor, Copilot...)", ai) + cmd("Or run it yourself, in the PeakCut folder", "git pull && pip install -r requirements.txt")}
-    <p class="sub">${up.restart ? "" : "Then stop PeakCut and start it again. With Docker, run <code>git pull && docker compose up -d --build</code> instead. "}<a class="lnk" href="${esc(up.url)}" target="_blank" rel="noopener">See every change on GitHub</a></p>
+    ${up.restart ? "" : cmd("Ask your AI coding assistant to review the upstream diff", ai) + cmd("Pull upstream changes (review first)", "git pull && pip install -r requirements.txt")}
+    <p class="sub">${up.restart ? "" : "Do not run git pull until you have reviewed the local ClipShorts changes. "}<a class="lnk" href="${esc(up.url)}" target="_blank" rel="noopener">See upstream PeakCut changes</a></p>
     <div class="dlg-foot"><button class="btn" value="later">Remind me next version</button><button class="btn primary" value="ok" autofocus>Got it</button></div></form>`;
   d.onclose = () => { if (d.returnValue === "later") { try { localStorage.setItem("peakcut_update_seen", up.latest); } catch {} drawShell(); } };
   d.returnValue = "ok"; d.showModal();
@@ -1283,22 +1316,20 @@ function drawShell() {  const nav = (v, icon, label, extra = "") => `<button cla
                      : `<button class="btn primary" data-act="golive"><span class="rdot"></span>${liveOn(c).length ? "Record live stream" : "Start recording"}</button>`;
   }
   if (S.view === "overview" || S.view === "library") {
-    const L = S.status.links || {};
-    act = (L.repo ? `<a class="btn" href="${esc(L.repo)}" target="_blank" rel="noopener" title="Star PeakCut on GitHub">${ic("github")}<span>Star<span class="long"> on GitHub</span></span></a>` : "")
-        + (L.follow ? `<a class="btn primary" href="${esc(L.follow)}" target="_blank" rel="noopener" title="Follow the maker of PeakCut on Instagram">${ic("instagram")}Follow me</a>` : "");
+    act = "";
   }
   const me = S.status.user;
   const kk = S.status.ai;
   const up = S.status.update;
   let upSeen = "";
   try { upSeen = localStorage.getItem("peakcut_update_seen") || ""; } catch {}
-  const upBar = up && up.latest !== upSeen ? `<div class="vb" role="status">${ic("up")}<span>${up.restart ? "<b>The new version is downloaded.</b> Close PeakCut and start it again to use it." : `A new version of PeakCut is out${up.behind ? `: <b>${up.behind} update${up.behind === 1 ? "" : "s"}</b> since yours` : ""}.`}</span>
+  const upBar = up && up.latest !== upSeen ? `<div class="vb" role="status">${ic("up")}<span>${up.restart ? "<b>Upstream PeakCut files were downloaded.</b> Review your local modifications before restarting." : `Upstream PeakCut changes are available${up.behind ? `: <b>${up.behind} update${up.behind === 1 ? "" : "s"}</b> since yours` : ""}. Review them before merging.`}</span>
     <button class="btn sm primary" data-act="updhow">${up.restart ? "What's new" : "How to update"}</button><button class="btn sm ghost" data-act="updlater" aria-label="Hide until the next version">Later</button></div>` : "";
-  const toolBar = S.status.no_ffmpeg ? `<div class="vb" role="alert">${ic("warn")}<span><b>PeakCut can't make clips yet: ffmpeg isn't installed on this computer.</b> Open a terminal, run <code>winget install Gyan.FFmpeg</code> (Mac: <code>brew install ffmpeg</code>, Linux: <code>sudo apt install ffmpeg</code>), then close PeakCut and start it again.</span></div>` : "";
-  const aiBar = !toolBar && S.status.ai?.problem && me?.is_admin && S.view !== "settings" ? `<div class="vb" role="status">${ic("warn")}<span><b>The AI isn't answering.</b> ${esc(S.status.ai.problem)} Until then, clips are picked by loudness.</span><button class="btn sm primary" data-act="go" data-v="settings" data-tab="ai">Open AI settings</button></div>` : "";
-  const diskBar = !toolBar && S.status.disk_full && S.view !== "settings" ? `<div class="vb" role="alert">${ic("warn")}<span><b>The drive PeakCut saves to is almost full, so it can't take new videos.</b> Free up space on it, or move PeakCut's folder to a bigger drive.</span>${me?.is_admin ? `<button class="btn sm primary" data-act="go" data-v="settings" data-tab="storage">Open Storage</button>` : ""}</div>` : "";
+  const toolBar = S.status.no_ffmpeg ? `<div class="vb" role="alert">${ic("warn")}<span><b>ClipShorts can't make clips yet: ffmpeg isn't installed on this computer.</b> Open a terminal, run <code>winget install Gyan.FFmpeg</code> (Mac: <code>brew install ffmpeg</code>, Linux: <code>sudo apt install ffmpeg</code>), then close ClipShorts and start it again.</span></div>` : "";
+  const aiBar = !toolBar && S.status.ai?.problem && me?.is_admin && S.view !== "settings" ? `<div class="vb" role="status">${ic("warn")}<span><b>The configured AI model isn't answering.</b> ${esc(S.status.ai.problem)} AI moment selection may be unavailable until it responds.</span><button class="btn sm primary" data-act="go" data-v="settings" data-tab="ai">Open AI settings</button></div>` : "";
+  const diskBar = !toolBar && S.status.disk_full && S.view !== "settings" ? `<div class="vb" role="alert">${ic("warn")}<span><b>The drive ClipShorts saves to is almost full, so it can't take new videos.</b> Free up space on it, or move ClipShorts's folder to a bigger drive.</span>${me?.is_admin ? `<button class="btn sm primary" data-act="go" data-v="settings" data-tab="storage">Open Storage</button>` : ""}</div>` : "";
   put($("#vbanner"), toolBar ? toolBar : diskBar ? diskBar : aiBar ? aiBar : upBar ? upBar : me && me.verified === false ? `<div class="vb" role="status">${ic("warn")}<span>Confirm your email to start clipping. We sent a link to <b>${esc(me.email)}</b>.</span><button class="btn sm" data-act="resendverify">Send a new link</button></div>`
-    : kk && kk.ready === false && S.view !== "usage" ? `<div class="vb" role="status">${ic("bolt")}<span>${me?.is_admin ? "Add your AI key to let the AI pick clips and write titles. Until then, clips are picked by loudness." : "The AI isn't set up on this server yet, so clips are picked by loudness."}</span>${me?.is_admin && S.view !== "settings" ? `<button class="btn sm primary" data-act="go" data-v="settings" data-tab="ai">${ic("plus")}Add AI key</button>` : ""}</div>` : "");
+    : kk && kk.ready === false && S.view !== "usage" ? `<div class="vb" role="status">${ic("bolt")}<span>${me?.is_admin ? "Set up AI to recognize funny, awkward/popat, fails, roasts, clutch plays and other moments. Without it, ClipShorts can only pick loud moments. Use Ollama locally (no key) or add your Gemini key." : "The AI isn't set up on this server yet, so clips are picked by loudness only."}</span>${me?.is_admin && S.view !== "settings" ? `<button class="btn sm primary" data-act="go" data-v="settings" data-tab="ai">${ic("plus")}Set up AI</button>` : ""}</div>` : "");
   put($("#tpic"), pic); $("#tpic").classList.toggle("live", !!(c && (c.live_job || liveOn(c).length)));
   put($("#utabs"), tabs); moveInd(); $(".topbar").classList.toggle("tabbed", !!tabs);
   put($("#title"), `<span>${esc(title)}</span>`); put($("#subtitle"), subHtml ?? esc(sub)); put($("#actions"), act);
@@ -1366,16 +1397,17 @@ function drawAdd(variant) {
     <div class="composer-bar">
       <button type="button" class="chip" data-act="pickfile">${ic("up")}Upload video</button>
       ${c ? "" : picker("o_creator", "File under creator", [{v:"", label:"No creator", icon:"user"}, ...S.creators.map(x => ({v:x.id, label:x.name, img:x.profile?.pic && x.profile.channel === x.channel ? avatarUrl(x) : ""}))], "")}
-      <button type="button" class="chip" data-act="toggleopts" aria-expanded="false">${ic("sliders")}Options</button>
+      <button type="button" class="chip on" data-act="toggleopts" aria-expanded="true">${ic("sliders")}Options</button>
       <span class="grow"></span><span class="hint">or drop a video file here</span>
       <button class="btn primary" id="goBtn">${ic("scissors")}Make clips</button>
     </div>
-    <div class="composer-opts" inert><div class="og">
+    <div class="composer-opts open"><div class="og">
       <div class="ob wide"><div class="ot">Clips</div><div class="nsteps">
-        ${stepper("o_max", "How many", c?.max_clips ?? 6, 1, 20, 1, "")}
+        ${stepper("o_max", "How many", c?.max_clips ?? 50, 1, 500, 1, "")}
         ${stepper("o_min", "Shortest", c?.min_len ?? 15, 5, 120, 5, "s")}
         ${stepper("o_maxlen", "Longest", c?.max_len ?? 60, 10, 180, 5, "s")}
-      </div></div>
+        ${stepper("o_score", "Min score", c?.min_score ?? 80, 50, 100, 5, "/100")}
+      </div><div class="hint">Clip count is a maximum. Higher score means fewer, stronger clips; no qualifying moments means no clips.</div></div>
       <div class="ob"><div class="ot cap-head"><span id="o_style_label">Caption style</span>
         <label><input type="checkbox" id="o_captions" data-caption-toggle ${c?.captions === false ? "" : "checked"}>Generate captions</label></div>
         ${choice("o_style", Object.entries(S.status.styles).map(([k, v]) => ({v:k, label:v, prev:capPrev(k)})), c?.style ?? "bounce", c?.captions === false)}</div>
@@ -1389,10 +1421,10 @@ function drawAdd(variant) {
     </div></div></form>`;
   drawAtt();
 }
-const LAYOUT_SHORT = {blur:"Blurred fill", zoom:"Zoomed in", crop:"Fill screen", gameplay:"Gameplay + facecam"};
+const LAYOUT_SHORT = {blur:"Blurred fill", zoom:"Zoomed in", crop:"Fill screen", gameplay:"Gameplay + facecam", reaction:"Reaction focus"};
 const CAP_LOOK = {bounce:{font:"'Archivo Black'", hl:"#FFFF00", up:true}, hype:{font:"Anton", hl:"#FF3C3C", up:true}, clean:{font:"Poppins", hl:"#6BD7FF", up:false, w:800}};
 function capPrev(k) {
-  const s = CAP_LOOK[k] || {font:"inherit", hl:"#FF8B33", up:true};
+  const s = CAP_LOOK[k] || {font:"inherit", hl:"#16D6E5", up:true};
   const t = s.up ? ["CLIP", "THIS"] : ["Clip", "this"];
   return `<span class="cap-prev" style="font-family:${s.font},sans-serif;font-weight:${s.w || 400}">${t[0]}&nbsp;<b style="color:${s.hl}">${t[1]}</b></span>`;
 }
@@ -1445,7 +1477,7 @@ document.addEventListener("keydown", e => {
 const targetCreator = () => creatorId() || $("#o_creator")?.value || "";
 function jobOptions() {
   const n = id => { const v = $(id).value; return v === "" ? null : Number(v); };
-  const o = {max_clips:n("#o_max"), min_len:n("#o_min"), max_len:n("#o_maxlen"), captions:$("#o_captions").checked, style:$("#o_style").value, layout:$("#o_layout").value, quality:n("#o_quality")};
+  const o = {max_clips:n("#o_max"), min_len:n("#o_min"), max_len:n("#o_maxlen"), min_score:n("#o_score"), captions:$("#o_captions").checked, style:$("#o_style").value, layout:$("#o_layout").value, quality:n("#o_quality")};
   if (n("#o_from") !== null) o.range_start = n("#o_from") * 60;
   if (n("#o_to") !== null) o.range_end = n("#o_to") * 60;
   return o;
@@ -1529,7 +1561,7 @@ async function lookUp(u) {
     if (e instanceof TypeError) {           // the request itself dropped (network blip): try once more quietly
       await new Promise(r => setTimeout(r, 800));
       try { return await api("/api/preview?url=" + encodeURIComponent(u)); }
-      catch (e2) { throw new Error(e2 instanceof TypeError ? "Couldn't reach PeakCut to check that link. Check your connection and paste it again." : e2.message); }
+      catch (e2) { throw new Error(e2 instanceof TypeError ? "Couldn't reach ClipShorts to check that link. Check your connection and paste it again." : e2.message); }
     }
     throw e;
   }
@@ -1670,6 +1702,8 @@ async function makeClips() {
 
 /* ============================================================ clips + jobs */
 function scoreCls(s) { return s >= 80 ? "s-hi" : s >= 60 ? "s-mid" : ""; }
+const CLIP_CATEGORIES = {funny:"Funny", embarrassing:"Popat / awkward", fail:"Fail", roast:"Roast", rage:"Rage", clutch:"Clutch", shock:"Shock", surprise:"Surprise", emotional:"Emotional", wholesome:"Wholesome", hot_take:"Hot take", story:"Story", skill:"Skill", twist:"Plot twist", other:"Highlight"};
+function categoryName(k) { return CLIP_CATEGORIES[k] || "Highlight"; }
 function postPills(c) {
   return Object.values(c.posts || {}).filter(p => p.status !== "cancelled").map(p => {
     const cls = p.status === "posted" ? "ok" : p.status === "failed" ? "bad" : "warn";
@@ -1679,7 +1713,8 @@ function postPills(c) {
 }
 function clipHtml(j, c) {
   const m = `/media/${j.id}/`, a = `data-j="${j.id}" data-c="${esc(c.id)}"`;
-  const body = c.status === "done" ? `<img src="${m}${esc(c.cover)}?v=${c.version}" alt="" loading="lazy"><span class="veil"><span>${ic("play")}</span></span>`
+  const body = c.status === "done" && c.local_deleted ? `<img src="${m}${esc(c.cover)}?v=${c.version}" alt="" loading="lazy"><span class="making" style="animation:none">Posted · local file removed</span>`
+    : c.status === "done" ? `<img src="${m}${esc(c.cover)}?v=${c.version}" alt="" loading="lazy"><span class="veil"><span>${ic("play")}</span></span>`
     : c.status === "error" ? `<span class="making" style="animation:none;color:var(--bad);background:var(--bad-soft)">Could not make this clip. Open it to try again.</span>`
     : `<span class="making">${c.status === "rendering" ? "Making this clip…" : "Waiting its turn…"}</span>`;
   const key = `c:${j.id}:${c.id}`, busyClip = c.status === "queued" || c.status === "rendering";
@@ -1687,16 +1722,17 @@ function clipHtml(j, c) {
     <button class="shot" data-act="openclip" ${a} aria-label="Open clip: ${esc(c.title || c.hook)}">${body}
       <span class="badge l ${scoreCls(c.score)}" title="AI score">${c.score || "Hand"}</span><span class="badge r">${fmt(c.end - c.start)}</span></button>
     <div class="clip-body">
-      <div class="hook">${esc(c.hook || "Untitled clip")}</div>
+      <div class="row" style="gap:5px;flex-wrap:wrap"><span class="sbadge">${esc(categoryName(c.category))}</span><div class="hook">${esc(c.hook || "Untitled clip")}</div></div>
       <div class="ttl">${esc(c.title)}</div>
+      ${(c.hashtags || []).length ? `<div class="sub">${(c.hashtags || []).slice(0,5).map(h => "#" + esc(h)).join(" ")}</div>` : ""}
       ${postPills(c) ? `<div class="row" style="gap:4px">${postPills(c)}</div>` : ""}
       <div class="clip-foot">
-        ${busyClip ? "" : `<label class="selck" title="Select this clip"><input type="checkbox" data-sel="${key}" ${sel().has(key) ? "checked" : ""} aria-label="Select this clip"></label>`}
-        ${c.status === "done" ? `<a class="btn sm icon ghost" href="${m}${esc(c.file)}?download=1" title="Download" aria-label="Download">${ic("down")}</a>` : ""}
+        ${busyClip || c.local_deleted ? "" : `<label class="selck" title="Select this clip"><input type="checkbox" data-sel="${key}" ${sel().has(key) ? "checked" : ""} aria-label="Select this clip"></label>`}
+        ${c.status === "done" && !c.local_deleted ? `<a class="btn sm icon ghost" href="${m}${esc(c.file)}?download=1" title="Download" aria-label="Download">${ic("down")}</a>` : ""}
         <button class="btn sm icon ghost" data-act="copy" ${a} title="Copy post text" aria-label="Copy post text">${ic("copy")}</button>
         ${busyClip ? "" : `<button class="btn sm icon ghost" data-act="delclip" ${a} title="Delete this clip" aria-label="Delete this clip">${ic("trash")}</button>`}
         <span class="grow"></span>
-        ${c.status === "done" ? `<button class="btn sm" data-act="openclip" ${a}>${ic("send")}Post</button>` : ""}
+        ${c.status === "done" && !c.local_deleted ? `<button class="btn sm" data-act="openclip" ${a}>${ic("send")}Post</button>` : ""}
       </div>
     </div></article>`;
 }
@@ -1728,21 +1764,29 @@ function liveHtml(j) {
     </div>${j.error ? `<div class="err">${esc(j.error)}</div>` : ""}</div>
     ${j.clips.length ? `<div class="grid" style="margin-bottom:28px">${[...j.clips].reverse().map(c => clipHtml(j, c)).join("")}</div>` : ""}`;
 }
+function jobPercent(j) {
+  const saved = Number(j.progress || 0), stage = String(j.stage || "");
+  const match = stage.match(/^AI reviewing\s+(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?) min of (\d+(?:\.\d+)?) min$/);
+  if (!match || saved >= 0.9) return saved;
+  const through = Number(match[2]), total = Math.max(1, Number(match[3]));
+  return Math.max(saved, Math.min(0.8, 0.25 + 0.55 * through / total));
+}
 function jobHtml(j) {
   if (j.status === "live") return liveHtml(j);
-  const busy = j.status === "queued" || j.status === "running";
+  const busy = ["queued", "running", "pausing"].includes(j.status);
   const who = !creatorId() && j.creator ? S.creators.find(c => c.id === j.creator)?.name : "";
   const meta = [who, j.uploader, j.duration ? fmt(j.duration) + " long" : "", j.clips.length ? j.clips.length + (j.clips.length === 1 ? " clip" : " clips") : "",
                 j.took ? "made in " + fmt(j.took) : "", j.kind === "live" ? "recording, " + j.stage.toLowerCase() : ""].filter(Boolean).map(esc).join(" · ");
   const pic = j.thumb ? `<img src="/media/${esc(j.id)}/thumb.jpg" alt="" loading="lazy">` : ic(j.source?.type === "file" ? "film" : "link");
   return `<div class="job-head"><div class="jt"><span class="jthumb">${pic}${j.duration ? `<span class="du">${fmt(j.duration)}</span>` : ""}</span><div style="min-width:0"><h3>${esc(j.title || j.source.name)}</h3><p class="sub">${meta}</p></div></div>
-      <div class="row" style="flex-wrap:nowrap;gap:4px">${busy ? "" : `
-        ${j.clips.some(c => c.status === "done") ? `<button class="btn sm icon ghost" data-act="dlall" data-j="${j.id}" title="Download all clips of this video" aria-label="Download all clips of this video">${ic("down")}</button>` : ""}
+      <div class="row" style="flex-wrap:nowrap;gap:4px">${j.status === "paused" ? `<button class="btn sm primary" data-act="resumejob" data-j="${j.id}" title="Resume from saved work">${ic("play")}Resume</button>` : j.status === "pausing" ? `<button class="btn sm" disabled title="The current step will finish before pausing">Pausing…</button>` : busy ? `<button class="btn sm" data-act="pausejob" data-j="${j.id}" title="Pause safely after the current step">${ic("pause")}Pause</button>` : `
+        ${j.clips.some(c => c.status === "done" && !c.local_deleted) ? `<button class="btn sm icon ghost" data-act="dlall" data-j="${j.id}" title="Download all clips of this video" aria-label="Download all clips of this video">${ic("down")}</button>` : ""}
         <button class="btn sm icon ghost" data-act="deljob" data-j="${j.id}" title="Delete" aria-label="Delete this video and its clips">${ic("trash")}</button>
         <label class="selck" title="Select this video and its clips"><input type="checkbox" data-sel="j:${j.id}" ${sel().has("j:" + j.id) ? "checked" : ""} aria-label="Select this video"></label>`}</div></div>
-    ${busy ? `<div class="bar"><i style="width:${Math.round(j.progress * 100)}%"></i></div><p class="sub">${esc(j.stage)} · ${Math.round(j.progress * 100)}%</p>` : ""}
+    ${busy ? `<div class="bar"><i style="width:${Math.round(jobPercent(j) * 100)}%"></i></div><p class="sub">${esc(j.stage)} · ${Math.round(jobPercent(j) * 100)}%</p>` : j.status === "paused" ? `<p class="sub">${esc(j.stage)} · saved progress ${Math.round(j.progress * 100)}%</p>` : ""}
     ${j.status === "done" && !j.clips.length ? `<p class="sub">${esc(j.stage)}</p>` : ""}
-    ${j.error ? `<div class="err">${esc(j.error)}<button class="rep" data-act="report" data-ctx="${esc("Video failed: " + (j.title || j.source.name || "") + " | " + j.error)}">Report this</button></div>` : ""}${j.ai?.note ? `<p class="sub">${esc(j.ai.note)}</p>` : ""}
+    ${j.error ? `<div class="err">${esc(j.error)}<button class="rep" data-act="report" data-ctx="${esc("Video failed: " + (j.title || j.source.name || "") + " | " + j.error)}">Copy fix</button></div>` : ""}${j.ai?.note ? `<p class="sub">${esc(j.ai.note)}</p>` : ""}${j.ai?.visual_review ? `<p class="sub">${esc(j.ai.visual_review)}</p>` : ""}
+    ${["done", "error"].includes(j.status) && j.kind === "video" && !j.clips.length && j.ai?.note ? `<button class="btn sm primary" data-act="retry-ai" data-j="${j.id}" title="Uses the saved transcript; it does not download or transcribe the full video again.">${ic("bolt")}Retry AI selection only</button>` : ""}
     ${j.clips.length ? `<div class="grid">${j.clips.map(c => clipHtml(j, c)).join("")}</div>` : ""}`;
 }
 /* ---- selecting several videos and clips: delete or download them together */
@@ -1752,10 +1796,10 @@ function selParts() {
   for (const k of sel()) { const p = k.split(":"); if (p[0] === "j") jobsSel.push(p[1]); else clipsSel.push([p[1], p[2]]); }
   return {jobsSel, clipsSel};
 }
-function selClips() {          // every finished clip the selection covers, for downloading
+function selClips() {          // every finished clip with a local file the selection covers
   const {jobsSel, clipsSel} = selParts(), out = new Map();
-  jobsSel.forEach(id => (jobOf(id)?.clips || []).forEach(c => { if (c.status === "done") out.set(id + "." + c.id, 1); }));
-  clipsSel.forEach(([j, c]) => { if (jobOf(j)?.clips.find(x => x.id === c)?.status === "done") out.set(j + "." + c, 1); });
+  jobsSel.forEach(id => (jobOf(id)?.clips || []).forEach(c => { if (c.status === "done" && !c.local_deleted) out.set(id + "." + c.id, 1); }));
+  clipsSel.forEach(([j, c]) => { const clip = jobOf(j)?.clips.find(x => x.id === c); if (clip?.status === "done" && !clip.local_deleted) out.set(j + "." + c, 1); });
   return [...out.keys()];
 }
 function drawSelBar() {
@@ -1801,7 +1845,7 @@ function drawJobs() {
     list = list.filter(j => j.status !== "live"); }
   if (!list.length) {
     root.querySelectorAll("section").forEach(e => e.remove());
-    if (!$(".empty", root)) root.innerHTML = `<div class="empty"><img src="/brand/favicon.svg" alt=""><b>${cid ? "No clips for this creator yet" : "No videos yet"}</b>${cid ? "Start recording their stream, or paste a link to one of their videos above." : "Paste a link above and the studio will find the best moments and turn them into clips."}</div>`;
+    if (!$(".empty", root)) root.innerHTML = `<div class="empty"><img src="/brand/favicon.svg?v=clipshorts2" alt=""><b>${cid ? "No clips for this creator yet" : "No videos yet"}</b>${cid ? "Start recording their stream, or paste a link to one of their videos above." : "Paste a link above and the studio will find the best moments and turn them into clips."}</div>`;
     return;
   }
   $(".empty", root)?.remove();
@@ -1863,7 +1907,7 @@ function drawCreatorForm() {
         <label class="f">Game<input data-k="game" value="${esc(c.game || "")}" placeholder="Read from the title"><small class="sub" style="font-weight:400">Left empty, the game is read from the stream's title. Set it for a streamer whose title says nothing: GTA 6, Fortnite, Elden Ring.</small></label>
         <label class="f">Shortest clip (seconds)<input data-k="min_len" type="number" value="${c.min_len}"></label>
         <label class="f">Longest clip (seconds)<input data-k="max_len" type="number" value="${c.max_len}"></label>
-        <label class="f">Clips per video<input data-k="max_clips" type="number" value="${c.max_clips}"></label>
+        <label class="f">Clips per video<input data-k="max_clips" type="number" min="1" max="500" value="${c.max_clips}"></label>
         <label class="f">Minutes of live stream to keep<input data-k="buffer_min" type="number" value="${c.buffer_min}"></label></div></div>
     <div class="card"><h2>Posting</h2><p class="help">${A.length ? "Choose the accounts this creator's clips go to. One account can be shared by several creators." : "No accounts are connected yet. Connect one in Settings, then come back."}</p>
       ${A.length ? `<div class="row" style="margin-bottom:16px">${A.map(a => `<label class="ck"><input type="checkbox" data-acc value="${esc(a.id)}" ${c.accounts.includes(a.id) ? "checked" : ""}>${esc(a.label)} · ${esc(a.name)}</label>`).join("")}</div>` : `<button class="btn" data-act="go" data-v="settings" style="margin-bottom:16px">${ic("cog")}Open Settings</button>`}
@@ -1872,6 +1916,7 @@ function drawCreatorForm() {
         <label class="f">Minutes between posts on one account<input data-k="post_gap_min" type="number" value="${c.post_gap_min}"></label>
         <label class="f">Most posts per account per day<input data-k="daily_cap" type="number" value="${c.daily_cap}"></label>
         <label class="f">Who can see posts (YouTube, TikTok)<select data-k="privacy">${opts({public:"Public", unlisted:"Unlisted", private:"Private"}, c.privacy)}</select></label>
+        <label class="sw span"><input type="checkbox" data-k="delete_after_post" ${c.delete_after_post !== false ? "checked" : ""}><span>Delete local clip after it posts everywhere<small>Removes only the rendered clip MP4 after every selected account upload succeeds. Keeps the source video.</small></span></label>
         <label class="f">Campaign pay per 1,000 views ($)<input data-k="rate_per_1k" type="number" step="0.1" min="0" value="${c.rate_per_1k}"></label>
         <label class="f span">Line added to every post (credit, campaign tag)<input data-k="post_footer" value="${esc(c.post_footer)}" placeholder="Clipped from @streamer"></label></div></div>
     <div class="card danger-card"><h2>Delete this creator</h2><p class="help">Removes ${esc(c.name)}, their settings and every video and clip filed under them. This cannot be undone.</p>
@@ -1887,11 +1932,16 @@ async function saveCreator(quiet) {
 function drawLog() {
   const c = creator();
   put($("#clog"), c && c.log.length ? `<div class="card"><div class="log">${c.log.map(l => `<div><time>${when(l.t)}</time><span>${esc(l.msg)}</span></div>`).join("")}</div></div>`
-    : `<div class="empty"><img src="/brand/favicon.svg" alt=""><b>Nothing has happened yet</b>Recordings, clips and posts for this creator will be listed here.</div>`);
+    : `<div class="empty"><img src="/brand/favicon.svg?v=clipshorts2" alt=""><b>Nothing has happened yet</b>Recordings, clips and posts for this creator will be listed here.</div>`);
 }
 
 /* ============================================================ overview */
-async function loadOverview() { try { S.overview = await api("/api/overview"); } catch { return; } drawOverview(); }
+async function fetchOverview() {
+  const o = await api(`/api/overview?posts_page=${S.postPage || 0}`);
+  S.postPage = o.posts_page || 0;
+  return o;
+}
+async function loadOverview() { try { S.overview = await fetchOverview(); } catch { return; } drawOverview(); }
 function barChart(daily) {
   const W = 720, H = 230, pl = 30, pb = 28, pt = 12, n = daily.length, ch = H - pt - pb;
   const peak = Math.max(1, ...daily.map(d => Math.max(d.clips, d.posted)));
@@ -1922,8 +1972,25 @@ function drawOverview() {
   const o = S.overview, box = $("#ov"); if (!o || !box) return;
   const sum = k => o.creators.reduce((a, r) => a + r[k], 0);
   const d14 = k => (o.daily || []).reduce((a, d) => a + d[k], 0);
-  const state = r => r.state === "recording" ? `<span class="pill live"><span class="dot"></span>Recording</span>` : r.state === "waiting" ? `<span class="pill warn">Waiting for live</span>` : `<span class="pill">Idle</span>`;
-  const pst = p => p.status === "posted" ? `<span class="pill ok">Posted</span>` : p.status === "failed" ? `<span class="pill bad">Failed</span>` : p.status === "posting" ? `<span class="pill warn">Posting now</span>` : `<span class="pill warn">${clock(p.due_at)}</span>`;
+  const pst = p => p.status === "posted" ? `<span class="pill ok">Posted</span>` : p.status === "youtube_scheduled" ? `<span class="pill ok">Scheduled on YouTube · ${clock(p.due_at)}</span>` : p.status === "failed" ? `<span class="pill bad">Failed</span>` : p.status === "posting" ? `<span class="pill warn">Uploading now</span>` : p.status === "paused" ? `<span class="pill">Paused</span>` : `<span class="pill warn">${clock(p.due_at)}</span>`;
+  const ytScheduleButton = p => {
+    const state = p.platform !== "youtube" ? "Other platform"
+      : p.status === "youtube_scheduled" ? "Scheduled"
+        : p.status === "posted" ? "Published"
+          : p.status === "failed" ? "Retry"
+          : p.status === "paused" ? "Paused" : "Queued";
+    const tip = p.platform === "youtube" && p.status === "youtube_scheduled"
+      ? `YouTube will publish this clip at ${new Date(p.due_at * 1000).toLocaleString()}.`
+      : p.platform === "youtube" && p.status === "posted" ? "This clip has already been published on YouTube."
+      : p.platform === "youtube" && p.status === "failed" ? `YouTube upload failed: ${p.error || "retry this post"}`
+        : p.platform === "youtube" ? "ClipShorts will upload and publish this clip at its queue time. Keep the app running; clips are spaced 10 minutes apart."
+            : `This queued post is for ${p.platform}.`;
+    return `<button type="button" class="btn sm dark schedule-status" disabled title="${esc(tip)}" aria-label="${esc(state)}">${ic(p.status === "youtube_scheduled" ? "check" : "clock")}${esc(state)}</button>`;
+  };
+  const postPage = Number(o.posts_page || 0), postSize = Number(o.posts_per_page || 20), postTotal = Number(o.posts_total ?? (o.posts || []).length);
+  const postPages = Math.max(1, Math.ceil(postTotal / postSize));
+  const postFirst = postTotal ? postPage * postSize + 1 : 0, postLast = Math.min(postTotal, postPage * postSize + o.posts.length);
+  const localPending = Number(o.local_pending ?? (o.posts || []).filter(p => p.status === "scheduled").length);
   const steps = nextSteps(o);
   put(box, `<div class="tiles">
       <div class="tile"><i>${ic("radio")}</i><b>${o.recording}</b><span>Recording now</span></div>
@@ -1938,17 +2005,24 @@ function drawOverview() {
         ${barChart(o.daily || [])}</div>
       ${aiCard()}
     </div>
-    ${steps.length ? `<div class="card"><div class="card-head"><div><h2>Next steps</h2><p class="sub">Finish setting up PeakCut</p></div></div>
+    <div class="card"><div class="card-head"><div><h2>What’s working</h2><p class="sub">YouTube Shorts from the last 10 days. Watch-time reports can take a day to appear.</p></div></div>
+      ${(o.performance || []).length ? `<div class="scroll"><table><tr><th>Clip type</th><th class="num">Posts</th><th class="num">Views</th><th class="num">Likes</th><th class="num">Avg. retention</th><th class="num">Recent views gained</th></tr>
+        ${o.performance.map(r => `<tr><td>${esc(r.category)}</td><td class="num">${r.posts}</td><td class="num">${r.views.toLocaleString()}</td><td class="num">${r.likes.toLocaleString()}</td><td class="num">${r.avg_view_percent == null ? "–" : r.avg_view_percent + "%"}</td><td class="num">${r.avg_recent_views == null ? "–" : r.avg_recent_views.toLocaleString()}</td></tr>`).join("")}</table></div>
+        <p class="help">ClipShorts uses categories with at least two recent posts as a light tie-breaker when it reviews new videos. It still favors real, strong moments and keeps variety.</p>`
+      : `<p class="help">Once Shorts are posted and YouTube reports their statistics, this panel will compare clip types and guide future clip selection.</p>`}</div>
+    ${steps.length && !S.jobs.length ? `<div class="card"><div class="card-head"><div><h2>Next steps</h2><p class="sub">Finish setting up ClipShorts</p></div></div>
       <div class="steps across">${steps.map((x, i) => `<button class="step" data-act="step" data-to="${esc(x[2])}"><span class="n">${i + 1}</span><span><b>${esc(x[0])}</b><span class="d">${esc(x[1])}</span></span>${ic("arrowr")}</button>`).join("")}</div></div>` : ""}
-    <div class="card"><div class="card-head"><div><h2>Creators</h2><p class="sub">Each creator's status and results</p></div></div>
-      ${o.creators.length ? `<div class="scroll"><table><tr><th>Creator</th><th>Status</th><th>Auto-post</th><th class="num">Clips today</th><th class="num">Posted today</th><th class="num">Waiting</th><th class="num">Failed</th><th class="num">Views</th><th class="num">Est. $</th></tr>
-      ${o.creators.map(r => `<tr><td><a class="lnk" href="#" data-act="go" data-v="c:${esc(r.id)}">${esc(r.name)}</a></td><td>${state(r)}</td><td>${r.autopost ? `<span class="pill ok">On</span>` : `<span class="pill">Off</span>`}</td><td class="num">${r.clips_today} <span class="sub">/ ${r.clips_total}</span></td><td class="num">${r.posted_today} <span class="sub">/ ${r.posted_total}</span></td><td class="num">${r.queued}</td><td class="num">${r.failed}</td><td class="num">${r.views.toLocaleString()}</td><td class="num">${r.earnings.toFixed(2)}</td></tr>`).join("")}</table></div>`
-      : `<div class="empty"><img src="/brand/favicon.svg" alt=""><b>No creators yet</b>Add one to give each streamer their own workspace.</div>`}</div>
-    <div class="card"><div class="card-head"><div><h2>Post queue</h2><p class="sub">${o.paused ? "Paused. Recording and clipping carry on; nothing is posted." : "Queued clips go out at their scheduled time."}</p></div>
-        <button class="btn ${o.paused ? "primary" : ""}" data-act="pause">${ic(o.paused ? "play" : "pause")}${o.paused ? "Resume posting" : "Pause all posting"}</button></div>
-      ${o.posts.length ? `<div class="scroll"><table class="stack"><tr><th>When</th><th>Clip</th><th>Creator</th><th>Account</th><th class="num">Views</th><th></th></tr>
-      ${o.posts.map(p => `<tr><td data-l="Status">${pst(p)}</td><td data-l="Clip" class="c-main">${p.url ? `<a class="lnk" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)}${p.error ? `<div class="err" style="margin:2px 0 0">${esc(p.error)}</div>` : ""}</td><td data-l="Creator">${esc(p.creator_name || "None")}</td><td data-l="Account">${esc(p.account_name)}</td><td data-l="Views" class="num">${p.views ?? "–"}</td>
-        <td class="c-act" style="text-align:right">${p.status === "scheduled" ? `<button class="btn sm" data-act="pcancel" data-id="${p.id}">Cancel</button>` : p.status === "failed" ? `<button class="btn sm" data-act="pretry" data-id="${p.id}">Retry</button>` : ""}</td></tr>`).join("")}</table></div>`
+    <div class="card"><div class="card-head"><div><h2>Creators</h2><p class="sub">Each creator's activity and results</p></div></div>
+      ${o.creators.length ? `<div class="scroll"><table><tr><th>Creator</th><th>Auto-post</th><th class="num">Clips today</th><th class="num">Posted today</th><th class="num">Waiting</th><th class="num">Failed</th><th class="num">Views</th><th class="num">Est. $</th></tr>
+      ${o.creators.map(r => `<tr><td><a class="lnk" href="#" data-act="go" data-v="c:${esc(r.id)}">${esc(r.name)}</a></td><td>${r.autopost ? `<span class="pill ok">On</span>` : `<span class="pill">Off</span>`}</td><td class="num">${r.clips_today} <span class="sub">/ ${r.clips_total}</span></td><td class="num">${r.posted_today} <span class="sub">/ ${r.posted_total}</span></td><td class="num">${r.queued}</td><td class="num">${r.failed}</td><td class="num">${r.views.toLocaleString()}</td><td class="num">${r.earnings.toFixed(2)}</td></tr>`).join("")}</table></div>`
+      : `<div class="empty"><img src="/brand/favicon.svg?v=clipshorts2" alt=""><b>No creators yet</b>Add one to give each streamer their own workspace.</div>`}</div>
+    <div class="card post-queue-card"><div class="card-head"><div><h2>Post queue</h2><p class="sub">${o.paused ? "Posting is paused. Queued clips will wait until posting resumes." : "ClipShorts uploads and publishes clips at their 10-minute queue times. Keep the app running while clips are posting."}</p></div>
+        <div class="row"><button class="btn primary" data-act="prereschedule" ${localPending ? "" : "disabled"} title="Assign fresh 10-minute slots to clips still waiting locally.">${ic("clock")}Reschedule queue</button><button class="btn ${o.paused ? "primary" : ""}" data-act="pause">${ic(o.paused ? "play" : "pause")}${o.paused ? "Resume posting" : "Pause all posting"}</button></div></div>
+      <p class="help">Queued clips need ClipShorts running at their queue time. YouTube views refresh about every five minutes; a new Short may show zero views while it gets its first viewers. Hashtags stay specific to the creator, game, and moment.</p>
+      ${o.posts.length ? `<div class="scroll"><table class="post-queue-table"><tr><th>When</th><th>Clip</th><th>Creator</th><th>Account</th><th class="num">Views</th><th>Publish status</th></tr>
+      ${o.posts.map(p => `<tr><td data-l="When">${pst(p)}</td><td data-l="Clip" class="c-main">${p.url ? `<a class="lnk" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)}${p.error ? `<div class="err" style="margin:2px 0 0">${esc(p.error)}</div>` : ""}</td><td data-l="Creator">${esc(p.creator_name || "None")}</td><td data-l="Account">${esc(p.account_name)}</td><td data-l="Views" class="num">${p.views ?? "–"}</td>
+        <td data-l="Publish status" class="c-act"><div class="row" style="justify-content:flex-end;gap:6px">${ytScheduleButton(p)}${p.status === "scheduled" ? `<button class="btn sm" data-act="ppause" data-id="${p.id}">${ic("pause")}Pause</button><button class="btn sm" data-act="pcancel" data-id="${p.id}">Cancel</button>` : p.status === "paused" ? `<button class="btn sm primary" data-act="presume" data-id="${p.id}">${ic("play")}Resume</button><button class="btn sm" data-act="pcancel" data-id="${p.id}">Cancel</button>` : p.status === "failed" ? `<button class="btn sm" data-act="pretry" data-id="${p.id}">Retry</button>` : ""}</div></td></tr>`).join("")}</table></div>
+      ${postPages > 1 ? `<div class="post-pages"><span>Showing ${postFirst}–${postLast} of ${postTotal} posts</span><div class="row"><button class="btn sm" data-act="post-prev" ${postPage <= 0 ? "disabled" : ""}>Previous 20</button><button class="btn sm primary" data-act="post-next" ${postPage + 1 >= postPages ? "disabled" : ""}>View next 20</button></div></div>` : ""}`
       : `<p class="help">Nothing queued or posted yet.</p>`}</div>`);
 }
 
@@ -2000,7 +2074,7 @@ function drawUsage() {
 /* ============================================================ settings */
 // With sign-in off there is no profile or password to manage. The AI section is for whoever runs the server.
 const setTabs = () => [
-  ...(S.status.user?.is_admin ? [["ai", "AI", "bolt", "Your AI service, model and key"]] : []),
+  ...(S.status.user?.is_admin ? [["ai", "AI", "bolt", "Your AI service, models and API keys"]] : []),
   ...(S.status.accounts === false ? [] : [["profile", "Profile", "user", "Your name, email and how you sign in"],
                                           ["security", "Security", "lock", "Password and signing out"]]),
   ["apps", "Connected apps", "plug", "Where your clips get posted"],
@@ -2008,8 +2082,10 @@ const setTabs = () => [
 function aiHints() {
   const k = S.ai, sel = $("#ai_provider"); if (!k || !sel) return;
   const pv = k.providers.find(x => x.id === sel.value) || k.providers[0], same = pv.id === k.provider;
-  $("#ai_key").placeholder = same && k.has_key ? `Saved${k.key_hint ? ", ends in " + k.key_hint : ""}. Paste a new key to replace it` : pv.needs_key ? "Paste your key" : "Not needed";
-  $("#ai_keyhint").innerHTML = pv.key_url ? `${pv.needs_key ? "Get a key at" : "Set it up at"} <a href="${esc(pv.key_url)}" target="_blank" rel="noopener">${esc(pv.key_url.replace("https://", ""))}</a>. The key stays on this server and is never shown again.` : "The key stays on this server and is never shown again.";
+  $("#ai_keys").placeholder = pv.needs_key ? "Paste one or more keys, one per line. New keys are added to the saved pool." : "Not needed for this service";
+  const hints = same ? (k.key_hints || []).map((h, i) => `Key ${i + 1} · ••••${esc(h)}`).join(" · ") : "";
+  const savedCount = same ? k.key_count : 0;
+  $("#ai_keyhint").innerHTML = `${savedCount ? `${savedCount} saved key${savedCount === 1 ? "" : "s"}${hints ? `: ${hints}` : ""}. ` : ""}${pv.key_url ? `${pv.needs_key ? "Get a key at" : "Set it up at"} <a href="${esc(pv.key_url)}" target="_blank" rel="noopener">${esc(pv.key_url.replace("https://", ""))}</a>. ` : ""}Paste up to 10 keys; they stay on this server and are never shown again.`;
   $("#ai_model").placeholder = pv.example ? "For example " + pv.example : "The model id, exactly as the service names it";
   $("#ai_base").placeholder = pv.address || "http://127.0.0.1:1234/v1";
   $("#ai_basewrap").hidden = pv.id !== "custom" && !(same && k.base_url);
@@ -2024,21 +2100,23 @@ async function drawSettings() {
   try {
     if (tab === "ai") {
       const k = S.ai = await api("/api/ai");
-      body.innerHTML = `<section class="set-sec"><h2>AI</h2><p class="help">PeakCut uses an AI model to pick the moments worth clipping and to write hooks, titles and captions. Use your own key from any of these services. You pay that service directly. Without a key, clips are picked by loudness.</p>
-          <div class="ai-state">${k.ready ? `<span class="pill ok">${ic("check")}Ready</span><span class="sub">${esc(k.label)} · ${esc(k.models[0] || "")}</span>` : `<span class="pill warn">Not set up</span><span class="sub">Choose a service, paste your key and pick a model.</span>`}</div>
+      body.innerHTML = `<section class="set-sec"><h2>AI</h2><p class="help">ClipShorts reviews speech across the full video, ranks the strongest candidate moments, and suggests hooks, titles and hashtags. With a vision model set below, it also checks three sampled frames from up to 24 top candidates for visible action and payoff. Use Ollama for a model running on this computer, or bring a key from another service. Without a working text model, clips are picked by audio signals only.</p>
+          <div class="ai-state">${k.ready ? `<span class="pill ok">${ic("check")}Ready</span><span class="sub">${esc(k.label)} · ${esc(k.models[0] || "")}${k.vision_model ? ` · Vision: ${esc(k.vision_model)}` : " · Visual review off"}</span>` : `<span class="pill warn">Not set up</span><span class="sub">Choose a service, paste your key and pick a model.</span>`}</div>
           <div class="ai-form">
             <label class="f">AI service<select id="ai_provider">${k.providers.map(x => `<option value="${esc(x.id)}" ${x.id === k.provider ? "selected" : ""}>${esc(x.label)}</option>`).join("")}</select></label>
-            <label class="f">Key<input id="ai_key" type="password" autocomplete="off" spellcheck="false"><span class="hint" id="ai_keyhint"></span></label>
+            <label class="f">API keys · one per line<textarea id="ai_keys" rows="3" autocomplete="off" spellcheck="false"></textarea><span class="hint" id="ai_keyhint"></span></label>
             <label class="f" id="ai_basewrap">Address<input id="ai_base" value="${esc(k.base_url || "")}" spellcheck="false"><span class="hint">Where the service answers. Only needed for a custom service.</span></label>
             <label class="f">Model<span class="with"><input id="ai_model" list="ai_models" value="${esc(k.models.join(", "))}" spellcheck="false"><button class="btn" type="button" data-act="aimodels">Find models</button></span>
               <datalist id="ai_models"></datalist><span class="hint">A fast, inexpensive model is the right choice. Add a second one after a comma to fall back on.</span></label>
+            <label class="f">Vision model (optional)<input id="ai_vision_model" value="${esc(k.vision_model || "")}" spellcheck="false" placeholder="For Groq: qwen/qwen3.8-27b"><span class="hint">Reviews sampled frames from candidate moments. Keep your text model above; use a model that accepts images here. Groq: qwen/qwen3.8-27b. Visual checks use extra API quota.</span></label>
           </div>
-          <div class="row" style="margin-top:20px"><button class="btn primary" data-act="aisave">Save and test</button>${k.ready ? `<button class="btn" data-act="aitest">Test again</button>` : ""}</div></section>`;
+          <div class="row" style="margin-top:20px"><button class="btn primary" data-act="aisave">Save and test</button>${k.ready ? `<button class="btn" data-act="aitest">Test again</button>` : ""}${k.key_count ? `<button class="btn danger" data-act="aiclearkeys">Remove saved keys</button>` : ""}</div>
+          <p class="hint">If a key is rate-limited or rejected, ClipShorts will try the next saved key. Keys from the same provider account may share the same quota.</p></section>`;
       aiHints();
     }
     if (tab === "profile") {
       const joined = me.created_at ? new Date(me.created_at * 1000).toLocaleDateString([], {day: "numeric", month: "long", year: "numeric"}) : "";
-      body.innerHTML = `<section class="set-sec"><h2>Profile</h2><p class="help">This is how you appear in PeakCut.</p>
+      body.innerHTML = `<section class="set-sec"><h2>Profile</h2><p class="help">This is how you appear in ClipShorts.</p>
         <div class="prof">${meAvatar(me).replace('class="avatar me-pic"', 'class="avatar prof-pic"')}<div><b>${esc(me.name)}</b><span>${esc(me.email)}</span></div></div>
         <dl class="kv"><div><dt>Email</dt><dd>${esc(me.email)} ${me.verified === false ? `<span class="pill warn">Not confirmed</span>` : `<span class="pill ok">Confirmed</span>`}</dd></div>
           <div><dt>Sign-in method</dt><dd>${me.google ? `Google${me.has_password ? " and password" : ""}` : "Email and password"}</dd></div>
@@ -2052,7 +2130,7 @@ async function drawSettings() {
             <label class="f">${me.has_password ? "New password" : "Password"}<input id="pw_new" type="password" autocomplete="new-password" placeholder="At least 8 characters"></label></div>
           <div class="row" style="margin-top:14px"><button class="btn primary" data-act="pwsave">${me.has_password ? "Change password" : "Set password"}</button>
             ${me.has_password ? `<a class="btn ghost" href="/reset">Forgot it?</a>` : ""}</div></section>
-        <section class="set-sec"><h2>Sessions</h2><p class="help">Sign out of PeakCut on this device. Changing your password signs out every other device too.</p>
+        <section class="set-sec"><h2>Sessions</h2><p class="help">Sign out of ClipShorts on this device. Changing your password signs out every other device too.</p>
           <button class="btn" data-act="logout">${ic("signout")}Sign out</button></section>
         <section class="set-sec"><h2 style="color:var(--bad)">Delete account</h2><p class="help">Removes your account and everything in it for good: creators, recordings, videos, clips and history.</p>
           <button class="btn danger" data-act="delaccount">${ic("trash")}Delete my account</button></section>`;
@@ -2061,16 +2139,16 @@ async function drawSettings() {
       const s = S.stor = await api("/api/storage");
       const usedPct = s.total_gb ? Math.min(100, Math.max(1, 100 * (s.total_gb - s.free_gb) / s.total_gb)) : 0;
       const gb = n => `${Number(n).toLocaleString(undefined, {maximumFractionDigits: 1})} GB`;
-      body.innerHTML = `<section class="set-sec"><h2>Storage</h2><p class="help">Everything PeakCut keeps is in one folder: your videos, clips, recordings, creators and settings. You can open it, back it up, or move it to a drive with more room.</p>
-          ${s.full ? `<div class="note" style="margin:0 0 14px">${ic("warn")}<span><b>This drive is almost full, so PeakCut can't take new videos.</b> ${gb(s.free_gb)} free on ${esc(s.drive)}; it needs at least ${gb(s.min_free_gb)}. Free up space, or move the folder to another drive below.</span></div>` : ""}
-          ${s.pending ? `<div class="note" style="margin:0 0 14px">${ic("clock")}<span><b>The folder changes to ${esc(s.pending)} the next time PeakCut starts.</b> Close PeakCut and start it again. <button class="btn sm ghost" data-act="storcancel">Undo</button></span></div>` : ""}
+      body.innerHTML = `<section class="set-sec"><h2>Storage</h2><p class="help">Everything ClipShorts keeps is in one folder: your videos, clips, recordings, creators and settings. You can open it, back it up, or move it to a drive with more room.</p>
+          ${s.full ? `<div class="note" style="margin:0 0 14px">${ic("warn")}<span><b>This drive is almost full, so ClipShorts can't take new videos.</b> ${gb(s.free_gb)} free on ${esc(s.drive)}; it needs at least ${gb(s.min_free_gb)}. Free up space, or move the folder to another drive below.</span></div>` : ""}
+          ${s.pending ? `<div class="note" style="margin:0 0 14px">${ic("clock")}<span><b>The folder changes to ${esc(s.pending)} the next time ClipShorts starts.</b> Close ClipShorts and start it again. <button class="btn sm ghost" data-act="storcancel">Undo</button></span></div>` : ""}
           <div class="stor-path"><code>${esc(s.path)}</code>${s.local ? `<button class="btn" data-act="storopen">${ic("folder")}Open folder</button>` : ""}</div>
           <div class="stor-bar ${s.full ? "low" : ""}" role="img" aria-label="${Math.round(usedPct)}% of the drive is used"><i style="width:${usedPct}%"></i></div>
-          <div class="stor-nums"><span>PeakCut uses <b>${gb(s.used_gb)}</b></span><span><b>${gb(s.free_gb)}</b> free of ${gb(s.total_gb)} on ${esc(s.drive)}</span></div>
+          <div class="stor-nums"><span>ClipShorts uses <b>${gb(s.used_gb)}</b></span><span><b>${gb(s.free_gb)}</b> free of ${gb(s.total_gb)} on ${esc(s.drive)}</span></div>
           ${s.fixed ? `<p class="sub" style="margin-top:16px">This folder is set with PEAKCUT_DATA in the .env file. Change it there, or remove that line to choose it here.</p>`
-            : S.storOpen ? `<div class="stor-change"><label class="f">New folder<span class="with"><input id="stor_new" placeholder="For example D:\\PeakCut" spellcheck="false" value="${esc(S.storNew || "")}">${s.local ? `<button class="btn" type="button" data-act="storpick">Browse</button>` : ""}</span></label>
+            : S.storOpen ? `<div class="stor-change"><label class="f">New folder<span class="with"><input id="stor_new" placeholder="For example D:\\ClipShorts" spellcheck="false" value="${esc(S.storNew || "")}">${s.local ? `<button class="btn" type="button" data-act="storpick">Browse</button>` : ""}</span></label>
                 <label class="ck"><input type="checkbox" id="stor_move" checked>Move everything that is in the current folder there too</label>
-                <p class="sub">The change happens the next time PeakCut starts, so nothing is moved while a video is being made.</p>
+                <p class="sub">The change happens the next time ClipShorts starts, so nothing is moved while a video is being made.</p>
                 <div class="row"><button class="btn primary" data-act="storsave">Use this folder</button><button class="btn ghost" data-act="storchange">Cancel</button></div></div>`
             : `<div class="row" style="margin-top:16px"><button class="btn" data-act="storchange">Change folder</button></div>`}</section>`;
     }
@@ -2108,7 +2186,7 @@ async function drawSettings() {
             <p class="sub">To let people connect ${name}, register this server once with <a href="${g[0]}" target="_blank" rel="noopener">${g[1]}</a>. It takes about five minutes.</p>
             <ol>${g[2].map(x => `<li>${x}</li>`).join("")}</ol>
             <div class="copyrow"><code>${esc(st.redirect)}</code><button class="btn sm" data-act="copytext" data-t="${esc(st.redirect)}">${ic("copy")}Copy</button></div>
-            ${!st.https && pf !== "youtube" ? `<p class="warnline">${name} only accepts https addresses. Put PeakCut on a domain with https (or a tunnel) and set PEAKCUT_PUBLIC_URL to it first.</p>` : ""}
+            ${!st.https && pf !== "youtube" ? `<p class="warnline">${name} only accepts https addresses. Put ClipShorts on a domain with https (or a tunnel) and set PEAKCUT_PUBLIC_URL to it first.</p>` : ""}
             <div class="fields"><label class="f">${esc(st.id_label)}<input id="app_id" placeholder="${st.ready ? "Saved: " + esc(st.id_hint) + ". Paste a new one to replace it" : ""}" autocomplete="off" spellcheck="false"></label>
               <label class="f">${esc(st.secret_label)}<input id="app_secret" type="password" placeholder="${st.ready ? "Saved. Paste a new one to replace it" : ""}" autocomplete="off"></label></div>
             <p class="sub">${g[3]}</p>
@@ -2116,7 +2194,7 @@ async function drawSettings() {
         return `<div class="appcard"><span class="applogo" style="background:${bg}">${logo}</span>
           <div class="apptx"><b>${name}</b><span>${desc}</span>${listOf(accs)}</div><div class="appact">${act}</div>${panel}</div>`;
       };
-      body.innerHTML = `<section class="set-sec"><h2>Connected apps</h2><p class="help">Connect the accounts PeakCut posts clips to: press Connect, sign in on the platform's own page, and you're back here. PeakCut never sees your passwords. Then pick which accounts each creator posts to, in that creator's Setup.</p>
+      body.innerHTML = `<section class="set-sec"><h2>Connected apps</h2><p class="help">Connect the accounts ClipShorts posts clips to: press Connect, sign in on the platform's own page, and you're back here. ClipShorts never sees your passwords. Then pick which accounts each creator posts to, in that creator's Setup.</p>
         <div class="apps">
           ${card("youtube", "YouTube", yt, "#FF0000", "Post clips to your channel as Shorts.")}
           ${card("instagram", "Instagram", ig, "linear-gradient(45deg,#F58529,#DD2A7B,#8134AF)", "Post clips as Reels. Needs a Creator or Business account.")}
@@ -2132,14 +2210,15 @@ function openClip(jid, cid) { D.jid = jid; D.cid = cid; D.sig = ""; drawClipDlg(
 function drawClipDlg(full) {
   const j = jobOf(D.jid), c = j?.clips.find(x => x.id === D.cid), dlg = $("#clipdlg");
   if (!c) { if (dlg.open) dlg.close(); return; }
-  const m = `/media/${j.id}/`, sig = c.status + c.version;
-  const stage = c.status === "done" ? `<video src="${m}${esc(c.file)}?v=${c.version}" poster="${m}${esc(c.cover)}?v=${c.version}" controls autoplay playsinline></video>`
+  const m = `/media/${j.id}/`, sig = c.status + c.version + !!c.local_deleted;
+  const stage = c.status === "done" && c.local_deleted ? `<div class="empty"><b>Local clip removed after upload</b>Open its posted link below to watch it on YouTube.</div>`
+    : c.status === "done" ? `<video src="${m}${esc(c.file)}?v=${c.version}" poster="${m}${esc(c.cover)}?v=${c.version}" controls autoplay playsinline></video>`
     : c.status === "error" ? `<div class="err" style="padding:20px;text-align:center">${esc(c.error || "Could not make this clip.")}</div>`
     : `<span class="making">${c.status === "rendering" ? "Making this clip…" : "Waiting its turn…"}</span>`;
   if (full) {
     dlg.innerHTML = `<div class="editor"><div class="stage" id="stage">${stage}</div>
       <div class="panel">
-        <div class="job-head" style="margin:0"><div><span class="badge ${scoreCls(c.score)}" style="position:static">${c.judges ? "Words " + c.judges.words + (c.judges.reaction ? " · Reaction " + c.judges.reaction : "") : c.score ? "Score " + c.score : "Clipped by hand"}</span>
+        <div class="job-head" style="margin:0"><div><span class="badge ${scoreCls(c.score)}" style="position:static">${c.judges ? "Words " + c.judges.words + (c.judges.reaction ? " · Reaction " + c.judges.reaction : "") : c.score ? "Potential " + c.score : "Clipped by hand"}</span> <span class="sbadge">${esc(categoryName(c.category))}</span>
           <p class="sub" style="margin-top:8px">${esc(c.reason || "")}</p></div><button class="btn icon ghost" data-act="closedlg" aria-label="Close">${ic("x")}</button></div>
         <h3>On the video</h3>
         <label class="f">Big text<input data-f="hook" value="${esc(c.hook)}"></label>
@@ -2148,17 +2227,21 @@ function drawClipDlg(full) {
           <label class="f">Layout<select data-f="layout">${opts(S.status.layouts, c.layout)}</select></label></div>
         <div class="two"><label class="f">Start (seconds)<input data-f="start" type="number" step="0.5" value="${c.start}"></label>
           <label class="f">End (seconds)<input data-f="end" type="number" step="0.5" value="${c.end}"></label></div>
-        <h3>Post text</h3>
-        <label class="f">Title<input data-f="title" value="${esc(c.title)}"></label>
-        <label class="f">Description<textarea data-f="description" rows="2">${esc(c.description)}</textarea></label>
+        <h3>YouTube post text</h3>
+        <label class="f">YouTube title and download name<input data-meta="title" maxlength="100" value="${esc(c.title)}"></label>
+        <label class="f">Description<textarea data-meta="description" rows="2">${esc(c.description)}</textarea></label>
+        <label class="f">Suggested hashtags, separated by commas<input data-meta="hashtags" value="${esc((c.hashtags || []).join(", "))}"></label>
+        <label class="f">Moment type<select data-meta="category">${opts(CLIP_CATEGORIES, c.category || "other")}</select></label>
+        <p class="sub">Check the title and tags before posting. Suggestions need an AI model in Settings → AI.</p>
+        <div class="row"><button class="btn" data-act="suggestclip">${ic("bolt")}Suggest title and hashtags</button><button class="btn primary" data-act="saveclip">Save post details</button></div>
         <button class="btn" data-act="remake">${ic("scissors")}Save and re-make clip</button>
         <h3>Post it</h3>
         <div id="dposts" class="row" style="gap:4px"></div>
-        ${S.accounts.length ? `<div class="row">${S.accounts.map(a => `<label class="ck"><input type="checkbox" data-pacc value="${esc(a.id)}">${esc(a.label)} · ${esc(a.name)}</label>`).join("")}</div>
+        ${c.local_deleted ? `<p class="help">This clip has already been uploaded and its local MP4 was removed.</p>` : S.accounts.length ? `<div class="row">${S.accounts.map(a => `<label class="ck"><input type="checkbox" data-pacc value="${esc(a.id)}">${esc(a.label)} · ${esc(a.name)}</label>`).join("")}</div>
           <div class="row"><button class="btn primary" data-act="postnow">${ic("send")}Post now</button><button class="btn" data-act="postqueue">Add to queue</button></div>`
           : `<p class="help">No accounts connected yet. Connect one in Settings.</p>`}
         <div class="row" style="margin-top:auto;padding-top:8px;border-top:1px solid var(--line)">
-          ${c.status === "done" ? `<a class="btn" href="${m}${esc(c.file)}?download=1">${ic("down")}Download</a>` : ""}
+          ${c.status === "done" && !c.local_deleted ? `<a class="btn" href="${m}${esc(c.file)}?download=1">${ic("down")}Download</a>` : ""}
           <button class="btn" data-act="copy" data-j="${j.id}" data-c="${esc(c.id)}">${ic("copy")}Copy post text</button></div>
       </div></div>`;
   } else if (D.sig !== sig) $("#stage").innerHTML = stage;
@@ -2181,7 +2264,7 @@ async function tick() {
     const fresh = !!got.jobs, stale = Date.now() - (S.ovAt || 0) > 20000;
     S.syncV = got.v;
     if (!fresh) {                                   // nothing of ours changed on the server
-      if (S.view === "overview" && stale) { S.overview = await api("/api/overview"); S.ovAt = Date.now(); render(); }
+      if (S.view === "overview" && stale) { S.overview = await fetchOverview(); S.ovAt = Date.now(); render(); }
       return;
     }
     const {jobs, creators, accounts} = got;
@@ -2190,7 +2273,7 @@ async function tick() {
     S.jobs = jobs; S.creators = creators; S.accounts = accounts;
     if (got.ai) S.status.ai = got.ai;
     if (got.unread != null) S.status.unread = got.unread;
-    if (S.view === "overview") { S.overview = await api("/api/overview"); S.ovAt = Date.now(); }
+    if (S.view === "overview") { S.overview = await fetchOverview(); S.ovAt = Date.now(); }
     if (creatorId() && !creator()) return go("overview");
     render();
   } catch {}
@@ -2262,10 +2345,27 @@ document.addEventListener("click", async e => {
   if (b.tagName === "A") e.preventDefault();
   try {
     if (a === "go") { closePops(); return go(d.v, d.tab); }
+    if (a === "retry-ai") {
+      const j = jobOf(d.j);
+      if (!j) return;
+      await api(`/api/jobs/${d.j}/retry-ai`, {method:"POST"});
+      toast("Checking AI, then reusing the saved transcript. The full video will not be processed again.", "ok");
+      return tick();
+    }
+    if (a === "pausejob") {
+      await api(`/api/jobs/${d.j}/pause`, {method:"POST"});
+      toast("Pause requested. The current download, transcript block, AI review, or clip render will finish safely first.", "ok");
+      return tick();
+    }
+    if (a === "resumejob") {
+      await api(`/api/jobs/${d.j}/resume`, {method:"POST"});
+      toast("Clipping resumed from saved work.", "ok");
+      return tick();
+    }
     if (a === "aimodels") {
       b.disabled = true;
       try {
-        const r = await send("/api/ai/models", {provider: $("#ai_provider").value, base_url: $("#ai_base").value, key: $("#ai_key").value});
+        const r = await send("/api/ai/models", {provider: $("#ai_provider").value, base_url: $("#ai_base").value, api_keys: $("#ai_keys").value});
         $("#ai_models").innerHTML = r.models.map(m => `<option value="${esc(m)}">`).join("");
         toast(r.models.length ? `${r.models.length} models found. Click the model box to pick one.` : "The service listed no models. Type the model yourself.", r.models.length ? "ok" : "");
         if (r.models.length) $("#ai_model").focus();
@@ -2275,7 +2375,7 @@ document.addEventListener("click", async e => {
     if (a === "aisave" || a === "aitest") {
       b.disabled = true;
       try {
-        if (a === "aisave") await send("/api/ai", {provider: $("#ai_provider").value, models: $("#ai_model").value, base_url: $("#ai_base").value, key: $("#ai_key").value}, "PUT");
+        if (a === "aisave") await send("/api/ai", {provider: $("#ai_provider").value, models: $("#ai_model").value, vision_model: $("#ai_vision_model").value, base_url: $("#ai_base").value, api_keys: $("#ai_keys").value}, "PUT");
         let ok = null, why = "";
         try { ok = await send("/api/ai/test"); } catch (err) { why = err.message; }
         S.status = await api("/api/status"); drawShell(); await drawSettings();
@@ -2283,6 +2383,12 @@ document.addEventListener("click", async e => {
         else toast(`Saved, but the test failed. ${why}`, "bad");
       } finally { b.disabled = false; }
       return;
+    }
+    if (a === "aiclearkeys") {
+      if (!confirm("Remove all saved AI API keys? AI features will stop until you add another key.")) return;
+      await send("/api/ai", {provider: $("#ai_provider").value, models: $("#ai_model").value, vision_model: $("#ai_vision_model").value, base_url: $("#ai_base").value, remove_keys: true}, "PUT");
+      S.status = await api("/api/status"); await drawSettings();
+      toast("Saved AI keys removed", "ok"); return;
     }
     if (a === "menu") return $("#app").classList.toggle("open");
     if (a === "collapse") { const m = $("#app").classList.toggle("mini"); try { localStorage.setItem("mini", m ? "1" : ""); } catch {} return; }
@@ -2342,7 +2448,7 @@ document.addEventListener("click", async e => {
       const j = jobOf(d.j); if (j) j.clips = j.clips.filter(c => c.id !== d.c);
       render(); toast("Clip deleted", "ok"); return tick();
     }
-    if (a === "dlall") return zipDownload((jobOf(d.j)?.clips || []).filter(c => c.status === "done").map(c => d.j + "." + c.id));
+    if (a === "dlall") return zipDownload((jobOf(d.j)?.clips || []).filter(c => c.status === "done" && !c.local_deleted).map(c => d.j + "." + c.id));
     if (a === "seldl") return zipDownload(selClips());
     if (a === "selclear") { sel().clear(); return render(); }
     if (a === "selall") {
@@ -2429,7 +2535,7 @@ document.addEventListener("click", async e => {
     }
     if (a === "storsave") {
       const s = await send("/api/storage", {path: $("#stor_new").value, move: $("#stor_move").checked}, "PUT");
-      S.storOpen = false; toast("Saved. Close PeakCut and start it again to switch to the new folder.", "ok"); return drawSettings();
+      S.storOpen = false; toast("Saved. Close ClipShorts and start it again to switch to the new folder.", "ok"); return drawSettings();
     }
     if (a === "storcancel") { await send("/api/storage", {cancel: true}, "PUT"); toast("Kept the current folder", "ok"); return drawSettings(); }
     if (a === "appsetup") { S.setupOpen = d.p && S.setupOpen !== d.p ? d.p : ""; return drawSettings(); }
@@ -2440,14 +2546,27 @@ document.addEventListener("click", async e => {
     }
     if (a === "bell") return openBell();
     if (a === "feedback") return openFeedback("bug");
-    if (a === "report") return openFeedback("bug", d.ctx);
+    if (a === "report") return copyErrorHelp(d.ctx);
     if (a === "acctmenu") return openAcct();
     if (a === "bellread") { await markRead(); return openBell().then(openBell); }
     if (a === "ntgo") { closePops(); const l = d.link || ""; if (l.startsWith("/app")) { const [v, tab] = fromPath(l); return go(v, tab); } if (l.startsWith("/")) location.href = l; return; }
     if (a === "csave") return void await saveCreator();
     if (a === "cdiscard") { drawCreatorForm(); return toast("Changes discarded"); }
+    if (a === "prereschedule") {
+      const result = await api("/api/posts/reschedule", {method:"POST"});
+      toast(result.rescheduled ? `Updated ${result.rescheduled} waiting clip${result.rescheduled === 1 ? "" : "s"}.` : "No local clips are waiting to reschedule.", result.rescheduled ? "ok" : "");
+      return loadOverview();
+    }
+    if (a === "post-next" || a === "post-prev") {
+      const pages = Math.max(1, Math.ceil((S.overview?.posts_total || 0) / (S.overview?.posts_per_page || 20)));
+      S.postPage = Math.max(0, Math.min(pages - 1, S.postPage + (a === "post-next" ? 1 : -1)));
+      return loadOverview();
+    }
     if (a === "pause") { await send("/api/settings", {paused:!S.overview.paused}, "PUT"); return loadOverview(); }
-    if (a === "pcancel" || a === "pretry") { await api(`/api/posts/${d.id}/${a === "pcancel" ? "cancel" : "retry"}`, {method:"POST"}); return loadOverview(); }
+    if (["pcancel", "pretry", "ppause", "presume"].includes(a)) {
+      const action = {pcancel:"cancel", pretry:"retry", ppause:"pause", presume:"resume"}[a];
+      await api(`/api/posts/${d.id}/${action}`, {method:"POST"}); return loadOverview();
+    }
     if (a === "ssave") { await saveSettings(); toast("Saved", "ok"); return drawSettings(); }
     if (a === "plansave") {
       const p = {}; $$("#sform [data-plan]").forEach(i => { (p[i.dataset.plan] ??= {})[i.dataset.f] = Number(i.value); });
@@ -2463,6 +2582,16 @@ document.addEventListener("click", async e => {
         body[i.dataset.f] = i.type === "checkbox" ? i.checked : i.type === "number" ? Number(i.value) : i.value;
       });
       await send(`/api/jobs/${D.jid}/clips/${D.cid}/render`, body); toast("Re-making the clip…", "ok"); return tick();
+    }
+    if (a === "saveclip") {
+      const body = {}; $$("#clipdlg [data-meta]").forEach(i => body[i.dataset.meta] = i.value);
+      await send(`/api/jobs/${D.jid}/clips/${D.cid}`, body, "PUT"); toast("Saved. Downloads will use this title.", "ok"); return tick();
+    }
+    if (a === "suggestclip") {
+      const s = await send(`/api/jobs/${D.jid}/clips/${D.cid}/suggest`, {});
+      for (const key of ["title", "description", "category"]) { const i = $(`#clipdlg [data-meta="${key}"]`); if (i && s[key]) i.value = s[key]; }
+      const tags = $("#clipdlg [data-meta=hashtags]"); if (tags) tags.value = (s.hashtags || []).join(", ");
+      toast("Suggestions ready. Review and save them.", "ok");
     }
     if (a === "postnow" || a === "postqueue") {
       const accs = $$("#clipdlg [data-pacc]:checked").map(i => i.value);

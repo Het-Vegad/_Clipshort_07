@@ -11,7 +11,9 @@ import traceback
 import uuid
 from pathlib import Path
 
-from . import brain, config, creators, ctx, facecam, games, load, media, quality, render, roman, safe, transcribe, usage
+import numpy as np
+
+from . import ai, brain, config, creators, ctx, facecam, games, load, media, quality, render, roman, safe, transcribe, usage
 
 class _FairQueue:
     """Whose video is next. Each person has their own line and the lines take turns, so someone who adds ten
@@ -51,6 +53,29 @@ class _FairQueue:
                 self.lines[user].append(item)
             self.epoch += 1
             self.cv.notify()
+
+    def remove_job(self, jid):
+        """Remove a not-yet-started video from its owner's fair queue."""
+        removed = False
+        with self.cv:
+            for item in list(self.quick):
+                if item[0] == "job" and item[1] == jid:
+                    self.quick.remove(item)
+                    removed = True
+            for user, line in list(self.lines.items()):
+                kept = collections.deque(item for item in line if not (item[0] == "job" and item[1] == jid))
+                if len(kept) != len(line):
+                    removed = True
+                    if kept:
+                        self.lines[user] = kept
+                    else:
+                        del self.lines[user]
+                        self.turn = collections.deque(u for u in self.turn if u != user)
+            if removed:
+                self.epoch += 1
+                self._pos = (0.0, {})
+                self.cv.notify_all()
+        return removed
 
     def get(self, quick_only=False):
         with self.cv:
@@ -107,11 +132,11 @@ _by_user: dict = {}                       # user -> {job id: job}: listing one p
 _lock = threading.RLock()
 on_clip_ready: list = []   # callbacks (job, clip), run once when a clip first finishes
 
-DEFAULTS = {"max_clips": 6, "min_len": 15, "max_len": 60, "style": "bounce", "layout": "blur", "quality": 720,
+DEFAULTS = {"max_clips": 50, "min_len": 15, "max_len": 60, "min_score": 80, "style": "bounce", "layout": "blur", "quality": 720,
             "range_start": None, "range_end": None, "captions": True}
 
 
-LIMITS = {"max_clips": (1, 20), "min_len": (5, 120), "max_len": (10, 180), "quality": (360, 1080)}
+LIMITS = {"max_clips": (1, 500), "min_len": (5, 120), "max_len": (10, 180), "min_score": (50, 100), "quality": (360, 1080)}
 
 
 def clean_options(options) -> dict:
@@ -155,7 +180,8 @@ def public(job) -> dict:
     out["source"] = {k: v for k, v in job["source"].items() if k != "path"}
     out["clips"] = [{k: v for k, v in c.items() if k not in ("src", "fixed_words", "fixed_for")} for c in job["clips"]]
     ai = job.get("ai") or {}
-    out["ai"] = {"tokens": ai.get("tokens", 0), "note": ai.get("note", ""), "used": bool(ai.get("model"))}   # never the model, never raw errors
+    out["ai"] = {"tokens": ai.get("tokens", 0), "note": ai.get("note", ""),
+                  "visual_review": ai.get("visual_review", ""), "used": bool(ai.get("model"))}   # never the model, never raw errors
     if job.get("status") == "queued":
         n = _q.ahead().get(job["id"])
         if n:
@@ -180,7 +206,17 @@ def save(job):
             return
         tmp = d / "job.json.tmp"
         tmp.write_text(text, encoding="utf-8")
-        tmp.replace(d / "job.json")
+        destination = d / "job.json"
+        for attempt in range(8):
+            try:
+                tmp.replace(destination)
+                return
+            except PermissionError:
+                if attempt == 7:
+                    raise
+                # Windows scanners can briefly hold a just-updated JSON file open.
+                # Retry instead of letting a yt-dlp progress callback abort the download.
+                time.sleep(0.1 * (attempt + 1))
 
 
 def _set(job, **kw):
@@ -214,6 +250,20 @@ def _load_file(f: Path, uid: str):
     if job.get("status") in ("queued", "running") and job.get("kind") != "live":
         # Picked up again as soon as the server is back (jobs.start), from the last finished part of the transcript.
         job.update(status="queued", stage="Picking up where it stopped", error=None, resume=True)
+        job.pop("ai_retrying", None)
+        job.pop("retry_started", None)
+    if (job.get("kind") != "live" and job.get("status") == "error"
+            and any(marker in str(job.get("error", "")) for marker in
+                    ("Unable to allocate", "ArrayMemoryError", "job.json.tmp", "Access is denied"))):
+        # Retry older audio-memory failures with chunked reads; recover transient Windows save failures too.
+        job.update(status="queued", stage="Retrying with low-memory audio processing", error=None, resume=True)
+    if job.get("resume") and job.get("done_blocks") and job.get("duration"):
+        options = job.get("options") or {}
+        start = float(options.get("range_start") or 0)
+        end = float(options.get("range_end") or job["duration"])
+        span = max(1.0, end - start)
+        restored = 0.14 + 0.78 * min(1.0, int(job["done_blocks"]) * BLOCK / span)
+        job["progress"] = max(float(job.get("progress") or 0), min(0.92, restored))
     if job.get("status") == "live":
         job.update(status="done", stage="Recording paused by a server update", was_live=True)
     buffered = job.get("kind") == "live" and any((f.parent / "buffer").glob("*.ts"))
@@ -268,7 +318,7 @@ def get(jid):
 
 def busy_count() -> int:
     u = ctx.uid()
-    return sum(1 for j in list(_by_user.get(u, {}).values()) if j["kind"] == "video" and j["status"] in ("queued", "running"))
+    return sum(1 for j in list(_by_user.get(u, {}).values()) if j["kind"] == "video" and j["status"] in ("queued", "running", "pausing"))
 
 
 def waiting_total() -> int:
@@ -288,7 +338,7 @@ def create(source: dict, options: dict, enqueue=True, creator=None, kind="video"
     c = creators.get(creator) if creator else None
     if c:
         d = creators.root(c["id"]) / ("live" if kind == "live" else "videos") / jid
-        base = {**DEFAULTS, **{k: c[k] for k in ("max_clips", "min_len", "max_len", "style", "layout", "captions")}}
+        base = {**DEFAULTS, **{k: c[k] for k in ("max_clips", "min_len", "max_len", "min_score", "style", "layout", "captions")}}
     else:
         d, base, creator = config.user_dir(ctx.uid()) / "jobs" / jid, dict(DEFAULTS), None
     opts = {**base, **clean_options(options)}
@@ -310,6 +360,148 @@ def create(source: dict, options: dict, enqueue=True, creator=None, kind="video"
 def enqueue(job):
     save(job)
     _q.put(("job", job["id"], None), user=job["user"])
+
+
+class _PauseAtCheckpoint(Exception):
+    pass
+
+
+def pause(jid):
+    job = get(jid)
+    if not job or job.get("kind") != "video":
+        raise ValueError("Only video clipping jobs can be paused.")
+    if job.get("status") == "queued":
+        removed = _q.remove_job(jid)
+        job.update(status="paused" if removed else "pausing",
+                   stage="Paused before processing" if removed else "Pause requested · finishing the current step",
+                   resume=bool((Path(job["dir"]) / "words.json").is_file()), pause_requested=not removed,
+                   paused_from="queued")
+        save(job)
+    elif job.get("status") == "running":
+        job.update(status="pausing", pause_requested=True, stage="Pause requested · finishing the current step")
+        save(job)
+    else:
+        raise ValueError("This video is not currently processing.")
+    return job
+
+
+def resume(jid):
+    job = get(jid)
+    if not job or job.get("kind") != "video" or job.get("status") != "paused":
+        raise ValueError("This video is not paused.")
+    job.update(status="queued", stage="Waiting to resume", error=None, pause_requested=False,
+               resume=(Path(job["dir"]) / "words.json").is_file())
+    save(job)
+    enqueue(job)
+    return job
+
+
+def _pause_checkpoint(job):
+    if job.get("pause_requested"):
+        job.update(status="paused", stage="Paused · safe to resume", pause_requested=False,
+                   resume=(Path(job["dir"]) / "words.json").is_file())
+        save(job)
+        raise _PauseAtCheckpoint()
+
+
+def retry_ai_selection(job):
+    """Re-rank a saved transcript after an AI outage, without downloading or transcribing the full video again."""
+    if job.get("kind") != "video" or job.get("status") not in ("done", "error"):
+        raise ValueError("Only a finished or stopped video can retry AI selection.")
+    if job.get("clips"):
+        raise ValueError("This video already has clips.")
+    if job.get("ai_retrying"):
+        raise ValueError("AI selection is already running for this video.")
+    d = Path(job["dir"])
+    transcript = d / "words.json"
+    if not transcript.is_file():
+        raise ValueError("The saved transcript is missing, so this video would need to be processed again.")
+    if (job.get("source") or {}).get("type") != "url" or not (job.get("source") or {}).get("url"):
+        raise ValueError("The original video link is missing, so selected clips cannot be fetched.")
+    if not brain.ai.ready():
+        raise ValueError("Set up a working AI model in Settings → AI first.")
+
+    job.update(status="running", stage="Checking AI before re-ranking the saved transcript", progress=0.05,
+               error=None, ai_retrying=True, ai={**(job.get("ai") or {}), "note": ""})
+    save(job)
+
+    def work():
+        ai_log = []
+        try:
+            # Fail fast on a provider outage instead of spending minutes retrying each transcript window.
+            brain.ai.test()
+            brain.ai.clear_problem()
+            usage.forget_all()
+            words = json.loads(transcript.read_text(encoding="utf-8"))
+            options = job.get("options") or DEFAULTS
+            start = float(options.get("range_start") or 0)
+            end = min(float(job.get("duration") or 0), float(options.get("range_end") or job.get("duration") or 0))
+            span = max(0.0, end - start)
+            if span < 10:
+                raise ValueError("The saved transcript does not cover a usable section of this video.")
+            review = [dict(w, s=round(w["s"] - start, 2), e=round(w["e"] - start, 2))
+                      for w in words if start <= w.get("s", -1) < end]
+            if len(review) < 8:
+                raise ValueError("There is too little speech in the saved transcript to select clips.")
+            job.update(stage="Ranking moments from the saved transcript", progress=0.25)
+            save(job)
+            from . import posting as post_queue
+            game = job.get("game") or games.detect(job.get("title"), job.get("uploader"))[0] or ""
+
+            def ai_progress(message):
+                ai_log.append(message)
+                if message.startswith("AI reviewing "):
+                    job.update(stage=message)
+                    save(job)
+
+            found, info = brain.find_clips(
+                review, np.zeros(max(1, math.ceil(span)), dtype=np.float32), span, job.get("title", ""),
+                job.get("uploader", ""), int(options.get("max_clips", 6)), int(options.get("min_len", 15)),
+                int(options.get("max_len", 60)), ai_progress, game=game,
+                category_guidance=post_queue.category_guidance(job.get("creator", "")),
+                min_score=int(options.get("min_score", 80)))
+            if not info.get("model"):
+                raise RuntimeError(info.get("note") or "The AI could not rank this transcript.")
+            job["game"] = game
+            candidates = []
+            for c in found:
+                c.update(id=f"clip{len(candidates) + 1:02d}", start=round(c["start"] + start, 2),
+                         end=round(c["end"] + start, 2), style=options.get("style", DEFAULTS["style"]),
+                         layout=options.get("layout", DEFAULTS["layout"]),
+                         captions=options.get("captions", True), status="queued", version=0)
+                c["hashtags"] = post_queue._personal_hashtags(job, c)
+                job["clips"].append(c)
+                candidates.append(c)
+            job["ai"] = {"model": info.get("model"), "tokens": info.get("tokens", 0),
+                          "note": "Selected from the saved transcript; the original full audio was not downloaded again.",
+                          "log": []}
+            job.update(stage=f"Cutting {len(candidates)} selected clips from the original link", progress=0.88)
+            save(job)
+            for i, clip in enumerate(candidates):
+                render_one(job, clip, words)
+                job.update(progress=0.88 + 0.12 * (i + 1) / max(1, len(candidates)))
+                save(job)
+            job.update(status="done", stage=f"Done · {sum(c.get('status') == 'done' for c in candidates)} clips recovered",
+                        progress=1.0, took=round(time.time() - job.get("retry_started", time.time())))
+            try:
+                from . import notices
+                notices.add(job.get("user"), "clips", f"{len(candidates)} clips recovered", job.get("title") or "your video",
+                            f"/app/creators/{job['creator']}" if job.get("creator") else "/app/videos")
+            except Exception:  # noqa: BLE001
+                pass
+        except Exception as e:  # noqa: BLE001
+            brain.ai.note_problem(e)
+            job["ai"] = {**(job.get("ai") or {}), "note": brain.ai.explain(e) or safe.friendly(e, 300),
+                          "log": ai_log[-10:] or (job.get("ai") or {}).get("log", [])}
+            job.update(status="done", stage="AI retry stopped before full video processing", progress=1.0)
+        finally:
+            job.pop("ai_retrying", None)
+            job.pop("retry_started", None)
+            save(job)
+
+    job["retry_started"] = time.time()
+    submit(work)
+    return job
 
 
 def submit(fn):
@@ -368,6 +560,37 @@ def request_render(jid, cid, changes: dict):
     clip.update(new, status="queued")
     save(job)
     _q.put(("clip", jid, cid))
+
+
+def update_clip_metadata(jid, cid, changes: dict):
+    """Save post copy and category without re-encoding the video."""
+    job = _jobs[jid]
+    clip = next(c for c in job["clips"] if c["id"] == cid)
+    for key, limit in (("title", 100), ("description", 2000)):
+        if key in changes:
+            clip[key] = brain._text(changes[key], limit)
+    if "category" in changes:
+        category = str(changes["category"] or "other").strip().lower()
+        if category not in brain.CATEGORIES:
+            raise ValueError("Choose a valid clip type.")
+        clip["category"] = category
+    if "hashtags" in changes:
+        raw = changes["hashtags"]
+        values = raw if isinstance(raw, list) else str(raw or "").split(",")
+        tags, seen = [], set()
+        for value in values:
+            tag = re.sub(r"[^\w]", "", str(value or "").lstrip("#"))[:30]
+            if tag and tag.lower() not in seen:
+                tags.append(tag)
+                seen.add(tag.lower())
+            if len(tags) >= 8:
+                break
+        clip["hashtags"] = tags
+    d = Path(job["dir"]) / "clips" / f"{cid}.json"
+    d.write_text(json.dumps({k: clip.get(k) for k in ("title", "description", "hashtags", "hook", "start", "end", "score")}),
+                 encoding="utf-8")
+    save(job)
+    return job
 
 
 def render_one(job, clip, words):
@@ -565,6 +788,8 @@ def _run_job(job):
     notes = []
     face = False       # where the webcam is in the source, found once; False means not looked for yet
     usage.set_context(job["creator"], job["title"] or src.get("name"))
+    if job.get("status") == "queued":
+        job.pop("pause_requested", None)
     resuming = bool(job.pop("resume", False)) and (d / "words.json").is_file()
     if resuming:   # after a restart: keep the transcript parts, clips and AI answers already made, and carry on
         _set(job, status="running", stage="Picking up where it stopped", error=None)
@@ -577,6 +802,8 @@ def _run_job(job):
         _set(job, stage="Getting the audio")
     fetch = ThreadPoolExecutor(1)
     video = None
+    wav = d / "audio.wav"
+    cached_audio = wav.is_file()
     if src["type"] == "url":
         meta = media.info(src["url"])
         if meta["kind"] != "video":
@@ -594,7 +821,8 @@ def _run_job(job):
         pieces = span > LONG_VIDEO or meta["duration"] <= 0
         if not pieces:  # shorter video: fetch all of it in the background while the audio is worked on
             video = fetch.submit(media.download, src["url"], d, int(o["quality"]))
-        audio_file = media.download_audio(src["url"], d, lambda p: _set(job, progress=0.03 + 0.1 * p))
+        audio_file = None if cached_audio else media.download_audio(src["url"], d,
+                                         lambda p: _set(job, progress=max(job.get("progress", 0), 0.03 + 0.1 * p)))
     else:
         pieces, audio_file = False, Path(src["path"])
         info = media.probe(audio_file)
@@ -603,18 +831,18 @@ def _run_job(job):
         _set(job, source_path=str(audio_file), width=info["width"], height=info["height"], duration=info["duration"])
         if not job.get("thumb") and media.save_thumb(d, video=audio_file):
             _set(job, thumb=True)
-    wav = d / "audio.wav"
-    media.extract_audio(audio_file, wav)
-    audio = media.load_audio(wav)
-    wav.unlink(missing_ok=True)
-    if src["type"] == "url":
+    if not cached_audio:
+        media.extract_audio(audio_file, wav)
+    audio_len = media.audio_samples(wav)
+    if src["type"] == "url" and audio_file:
         audio_file.unlink(missing_ok=True)
+    _pause_checkpoint(job)
     if not job["duration"]:
-        job["duration"] = len(audio) / 16000
+        job["duration"] = audio_len / 16000
     lo = int((o["range_start"] or 0) * 16000)
-    hi = min(len(audio), int(o["range_end"] * 16000)) if o["range_end"] else len(audio)
+    hi = min(audio_len, int(o["range_end"] * 16000)) if o["range_end"] else audio_len
     span = (hi - lo) / 16000
-    db = media.loudness_per_second(audio[lo:hi])
+    db = media.loudness_per_second(wav, lo, hi)
 
     vlock, vstate = threading.Lock(), {}
 
@@ -643,14 +871,14 @@ def _run_job(job):
 
     def make(clip, words_now):
         began[clip["id"]] = time.time()
-        if src["type"] == "url" and (pieces or not whole_video()):
-            _fetch_piece(job, clip, audio)
+        if src["type"] == "url" and not clip.get("src") and (pieces or not whole_video()):
+            _fetch_piece(job, clip, wav)
         if clip["status"] != "error" and clip.get("captions", True) and yt and yt[1].lower().startswith("en"):
             # The clip was found with YouTube's transcript. What is shown on screen comes from our own model,
             # run on just this clip: full punctuation, nothing blanked out, timings to the word.
             a0, b0 = max(lo, int((clip["start"] - 1.5) * 16000)), min(hi, int((clip["end"] + 1.5) * 16000))
             try:
-                tw = [dict(w, s=round(w["s"] + a0 / 16000, 2), e=round(w["e"] + a0 / 16000, 2)) for w in transcribe.transcribe(audio[a0:b0])]
+                tw = [dict(w, s=round(w["s"] + a0 / 16000, 2), e=round(w["e"] + a0 / 16000, 2)) for w in transcribe.transcribe(media.read_audio(wav, a0, b0))]
             except Exception:  # noqa: BLE001 - the clip is still made, with YouTube's words
                 tw = []
             if len(tw) >= 3:
@@ -691,8 +919,12 @@ def _run_job(job):
                 c["status"] = "queued"
                 futures.append((renders.submit(ctx.bind(make), c, list(words)), c))
         save(job)
-    # The transcript of the next part is written while the AI is still reading this one (the AI is a wait on the
-    # network, the transcript is work on this machine), so neither waits for the other.
+        if done_blocks:
+            completed = blocks[min(done_blocks, len(blocks)) - 1][1] - lo
+            restored = 0.14 + 0.78 * completed / max(1, hi - lo)
+            _set(job, progress=max(job.get("progress", 0), min(0.92, restored)))
+    # The transcript is collected for the complete recording before moments are ranked. That lets the final
+    # selection compare candidates from the beginning, middle, and end instead of reserving a quota per block.
     ahead = ThreadPoolExecutor(2, thread_name_prefix="ahead")
     heard, now_on = {}, [done_blocks]
 
@@ -705,7 +937,7 @@ def _run_job(job):
                 if now_on[0] == i and p - last[0] > 0.05:      # only the part being shown moves the bar
                     last[0] = p
                     _set(job, progress=max(job["progress"], 0.14 + 0.78 * ((a_ - lo) + p * (b_ - a_)) / max(1, hi - lo)))
-            heard[i] = ahead.submit(ctx.bind(transcribe.transcribe), audio[a_:b_], tp)
+            heard[i] = ahead.submit(ctx.bind(transcribe.transcribe), media.read_audio(wav, a_, b_), tp)
 
     # The ad breaks and static screens of the whole video, found once. It reads the video end to end,
     # so it is done here rather than for each clip, and only when asked for.
@@ -713,6 +945,7 @@ def _run_job(job):
     for bi, (a, b) in enumerate(blocks):
         if bi < done_blocks:
             continue                      # transcribed and checked by the AI before the restart
+        _pause_checkpoint(job)
         shift = a / 16000
         where = f" (minute {round((a - lo) / 16000 / 60)} of {round(span / 60)})" if len(blocks) > 1 else ""
         if yt:
@@ -724,53 +957,114 @@ def _run_job(job):
             hear(bi)
             hear(bi + 1)
             bw = heard.pop(bi).result()
+        _pause_checkpoint(job)
         _set(job, progress=max(job["progress"], 0.14 + 0.78 * (b - lo) / max(1, hi - lo)))
         words += [dict(w, s=round(w["s"] + shift, 2), e=round(w["e"] + shift, 2)) for w in bw]
         (d / "words.json").write_text(json.dumps(words), encoding="utf-8")
-        _set(job, stage="Finding the best moments" + where, word_count=len(words))
-        left = int(o["max_clips"]) - len(job["clips"])
-        if left <= 0 or len(bw) < 8:
-            job["done_blocks"] = bi + 1
-            save(job)
-            continue
-        quota = max(1, math.ceil(left / (len(blocks) - bi)))
-        s0 = int((a - lo) / 16000)
-        found, ai = brain.find_clips(bw, db[s0: s0 + int((b - a) / 16000) + 1], (b - a) / 16000, job["title"],
-                                     job["uploader"], quota, int(o["min_len"]), int(o["max_len"]), notes.append, game=game)
-        tokens += ai.get("tokens", 0)
-        model = ai.get("model") or model
-        if ai.get("note"):
-            notes.append(ai["note"])
+        _set(job, stage="Reading the whole video" + where, word_count=len(words))
+        job["done_blocks"] = bi + 1
+        save(job)
+        _pause_checkpoint(job)
+
+    if not job["clips"]:
+        _pause_checkpoint(job)
+        _set(job, stage="Ranking the strongest moments across the full video", progress=max(job["progress"], 0.92),
+             word_count=len(words))
+        clip_shift = lo / 16000
+        review_words = [dict(w, s=round(w["s"] - clip_shift, 2), e=round(w["e"] - clip_shift, 2))
+                        for w in words if lo / 16000 <= w["s"] < hi / 16000]
+        from . import posting
+        guidance = posting.category_guidance(job.get("creator", "")) if job.get("creator") else ""
+        desired_clips = int(o["max_clips"])
+        review_limit = min(60, max(desired_clips, min(24, desired_clips * 2)))
+
+        def ai_progress(message):
+            notes.append(message)
+            if message.startswith("AI reviewing "):
+                _set(job, stage=message)
+
+        found, ai_info = brain.find_clips(review_words, db, span, job["title"], job["uploader"],
+                                          desired_clips, int(o["min_len"]), int(o["max_len"]), ai_progress,
+                                          game=game, category_guidance=guidance,
+                                          min_score=int(o.get("min_score", 80)), return_pool=review_limit)
+        tokens += ai_info.get("tokens", 0)
+        model = ai_info.get("model") or model
+        if ai_info.get("note"):
+            notes.append(ai_info["note"])
         if found and statics:
             # A commercial or a "be right back" slate is not a clip. Any clip that sits mostly inside one
             # is dropped.
             keep = []
             for c in found:
-                a_s, b_s = c["start"] + shift, c["end"] + shift
+                a_s, b_s = c["start"] + clip_shift, c["end"] + clip_shift
                 inside = quality.static_overlap(a_s, b_s, statics)
                 if inside > 0.5 * max(1.0, b_s - a_s):
                     notes.append(f"A clip from {round(a_s)}s was left out: it sat in an ad break or a static screen.")
                 else:
                     keep.append(c)
             found = keep
+        # From this point forward candidates use the source video's clock. That is
+        # required for frame extraction and for downloading candidate sections.
+        for candidate in found:
+            candidate["start"] = round(candidate["start"] + clip_shift, 2)
+            candidate["end"] = round(candidate["end"] + clip_shift, 2)
+        visual_note = ("No candidates cleared the transcript/audio quality threshold, so there were no frames to review."
+                       if ai.current().get("vision_model") else
+                       "Visual review is off; add an image-capable model in Settings → AI.")
+        if found and ai.current().get("vision_model"):
+            # Reuse the full download for regular videos. For long videos, fetch just
+            # each candidate section and keep that section for rendering.
+            visual_source = job.get("source_path") or ""
+            if src["type"] == "url" and not pieces:
+                try:
+                    visual_source = str(whole_video() or "")
+                except Exception as e:  # noqa: BLE001
+                    notes.append(f"Visual review will fetch candidate sections: {safe.friendly(e, 160)}")
+            if src["type"] == "url" and (pieces or not visual_source):
+                for candidate in found[:24]:
+                    _fetch_piece(job, candidate, wav)
+                found = [c for c in found if c.get("status") != "error"]
+            from . import visual
+            vt, reviewed, visual_note = visual.review(found, visual_source, notes.append)
+            tokens += vt
+            if reviewed:
+                found.sort(key=lambda c: -float(c.get("score", 0)))
+                selected, categories = [], set()
+                ranked = list(found)
+                while ranked and len(selected) < desired_clips:
+                    top_score = float(ranked[0].get("score", 0))
+                    pick_i = next((i for i, c in enumerate(ranked)
+                                   if str(c.get("category", "other")).lower() not in categories
+                                   and top_score - float(c.get("score", 0)) <= 10), 0)
+                    clip = ranked.pop(pick_i)
+                    selected.append(clip)
+                    categories.add(str(clip.get("category", "other")).lower())
+                for c in found:
+                    if c not in selected and c.get("src"):
+                        Path(c["src"]).unlink(missing_ok=True)
+                found = sorted(selected, key=lambda c: c["start"])
+            notes.append(visual_note)
         for c in found:
-            c.update(id=f"clip{len(job['clips']) + 1:02d}", start=round(c["start"] + shift, 2),
-                     end=round(c["end"] + shift, 2), style=o["style"], layout=o["layout"],
+            c.update(id=f"clip{len(job['clips']) + 1:02d}", start=round(c["start"], 2),
+                     end=round(c["end"], 2), style=o["style"], layout=o["layout"],
                      captions=o.get("captions", True), status="queued", version=0)
+            c["hashtags"] = posting._personal_hashtags(job, c)
             # Only the gameplay layout uses a webcam, so it is only looked for then, and only once: a
             # stream with no webcam is not looked for again on every clip of it.
-            if o["layout"] == "gameplay" and face is False:
+            if o["layout"] in ("gameplay", "reaction") and face is False:
                 face = _facecam(job)
             if face:
                 c["facecam"] = face
             job["clips"].append(c)
             futures.append((renders.submit(ctx.bind(make), c, list(words)), c))
-        job["ai"] = {"model": model, "tokens": tokens, "note": "", "log": notes[-5:]}
-        job["done_blocks"] = bi + 1       # a restart from here on carries on with the next part
+        job["ai"] = {"model": model, "tokens": tokens, "note": "", "visual_review": visual_note, "log": notes[-5:]}
         save(job)
+    _pause_checkpoint(job)
     if futures:
         _set(job, stage="Finishing the clips", progress=max(job["progress"], 0.92))
     _wait_for_clips(job, futures, began, renders._max_workers)
+    _pause_checkpoint(job)
+    wav.unlink(missing_ok=True)
     if exact:           # keep our own words for the clips in the saved transcript, so editing a clip later uses them
         for a_s, b_s, tw in exact.values():
             words = [w for w in words if not a_s <= w["s"] < b_s] + tw
@@ -779,10 +1073,16 @@ def _run_job(job):
     renders.shutdown(wait=False)
     ahead.shutdown(wait=False)
     fetch.shutdown(wait=False)
-    del audio
     clips = job["clips"]
-    job["ai"] = {"model": model, "tokens": tokens, "log": notes[-5:],
-                 "note": "The AI was unavailable, so clips were picked by loudness only." if clips and not model else ""}
+    note = ""
+    if not model and not clips:
+        problem = ai.problem
+        note = (problem.get("text") if problem.get("config") == ai.config_signature()
+                and time.time() - problem.get("at", 0) < 6 * 3600 else "")
+        note = note or "The AI was unavailable, so no clips were created. Check AI settings and retry."
+    elif not clips:
+        note = next((n for n in reversed(notes) if "minimum quality score" in n), "")
+    job["ai"] = {"model": model, "tokens": tokens, "log": notes[-5:], "note": note}
     stage = "Done" if clips else "Done, but nothing clip-worthy was found"
     _set(job, status="done", stage=stage, progress=1.0, took=round(time.time() - t0))
     try:
@@ -819,6 +1119,8 @@ def _worker(quick_only=False):
                 if clip.get("captions", True):
                     words = json.loads((Path(job["dir"]) / "words.json").read_text(encoding="utf-8"))
                 render_one(job, clip, words)
+        except _PauseAtCheckpoint:
+            pass  # _pause_checkpoint already saved the resumable state and stage
         except Exception as e:  # noqa: BLE001
             (Path(job["dir"]) / "error.log").write_text(traceback.format_exc(), encoding="utf-8")
             if kind == "job":

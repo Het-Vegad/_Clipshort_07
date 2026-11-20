@@ -468,10 +468,13 @@ class Session:
             return self._verdict(verdict, f"Skipped: {st['live_per_hour']} clips this hour already")
         usage.set_context(self.job["creator"], self.job["title"] or "Live stream")
         title, up = self.job["title"], self.job["uploader"]
+        from . import posting
+        creator_guidance = posting.category_guidance(self.job.get("creator", ""))
         try:
             cands, tok = brain.judge_transcript(win, ws, now, title, up, st["min_len"], st["max_len"], self.job["clips"],
                                                 n=1 if every <= 2 else 2, must=must, game=self._game(),
-                                                timeout=config.LIVE_AI_TIMEOUT)  # Auto (0) asks for one
+                                                timeout=config.LIVE_AI_TIMEOUT,
+                                                creator_guidance=creator_guidance)  # Auto (0) asks for one
         except Exception as e:  # noqa: BLE001
             self.job["ai"]["last_error"] = str(e)[-200:]
             return self._verdict(verdict, "AI error: " + str(e)[-80:])
@@ -571,8 +574,11 @@ class Session:
 
     def _add_clip(self, c):
         self.n += 1
+        from . import posting
+        self.job["game"] = self._game()
         c.update(id=f"clip{self.n:03d}", style=self.settings["style"], layout=self.settings["layout"],
                  captions=self.job["options"].get("captions", True), status="queued", version=0, made_at=time.time())
+        c["hashtags"] = posting._personal_hashtags(self.job, c)
         with self.lock:
             self.job["clips"].append(c)
         jobs.save(self.job)
@@ -609,7 +615,7 @@ class Session:
             lst.unlink(missing_ok=True)
         # Only the gameplay layout uses a webcam, and only once the clip's own file is written: the
         # webcam is looked for in it, once per stream.
-        if clip.get("layout") == "gameplay":
+        if clip.get("layout") in ("gameplay", "reaction"):
             if not self.facecam_checked:
                 self.facecam_box = self._find_facecam(src)
                 self.facecam_checked = True

@@ -7,7 +7,7 @@ for k in ("PEAKCUT_MAX_LIVE_PER_USER", "PEAKCUT_MAX_JOBS_PER_USER", "PEAKCUT_MAX
     os.environ.pop(k, None)
 os.environ.update(DATABASE_URL="", PEAKCUT_MAX_LIVE="20")
 sys.path.insert(0, ".")
-from studio import auth, config, creators, ctx, db, live, load
+from studio import auth, config, creators, ctx, db, jobs, live, load
 db.init()
 fails = []
 def check(n, got, want=True):
@@ -15,6 +15,8 @@ def check(n, got, want=True):
     print(("PASS " if ok else "FAIL ") + n + ("" if ok else f"   got {got!r}")); ok or fails.append(n)
 
 check("five videos at once", config.MAX_ACTIVE_JOBS_PER_USER, 5)
+check("new clipping jobs default to 50 clips", jobs.DEFAULTS["max_clips"], 50)
+check("new creator workspaces default to 50 clips", creators.DEFAULTS["max_clips"], 50)
 check("no cap on recordings, video length, recording length, storage, uploads or creators",
       all(x >= 10 ** 6 for x in (config.MAX_LIVE_PER_USER, config.MAX_VIDEO_HOURS, config.MAX_LIVE_HOURS, config.MAX_USER_GB,
                                  config.MAX_UPLOAD_MB, config.MAX_CREATORS)))
@@ -37,6 +39,24 @@ with ctx.as_user(u.id):
     except ValueError as e:
         again = str(e)
     check("the same creator is not recorded twice at once", "already being recorded" in again, True)
+
+    queued = jobs.create({"type": "url", "url": "https://youtube.com/watch?v=abcdefghijk", "name": "queue test"}, {})
+    paused = jobs.pause(queued["id"])
+    check("a queued clipping job pauses immediately", paused["status"], "paused")
+    resumed = jobs.resume(queued["id"])
+    check("a paused clipping job resumes into the queue", resumed["status"], "queued")
+    jobs._q.remove_job(queued["id"])
+    jobs.delete(queued["id"])
+
+    running = jobs.create({"type": "url", "url": "https://youtube.com/watch?v=abcdefghijk", "name": "pause checkpoint"}, {}, enqueue=False)
+    running.update(status="running", pause_requested=False)
+    jobs.pause(running["id"])
+    try:
+        jobs._pause_checkpoint(running)
+    except jobs._PauseAtCheckpoint:
+        pass
+    check("a running job stops at its next safe checkpoint", running["status"], "paused")
+    jobs.delete(running["id"])
 
 print("ALL PASSED" if not fails else f"{len(fails)} failed")
 import shutil; db.engine.dispose(); shutil.rmtree(os.environ["PEAKCUT_DATA"], ignore_errors=True)

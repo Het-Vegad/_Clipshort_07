@@ -62,7 +62,8 @@ def brief() -> dict:
             u.user_id == uid, u.t >= midnight)).first()
     out = {"ready": ai.ready(), "provider": ai.label(), "model": (ai.models() or [""])[0],
            "today_calls": int(today[0]), "today_tokens": int(today[1]),
-           "problem": ai.problem["text"] if ai.problem["text"] and now - ai.problem["at"] < 6 * 3600 else ""}
+           "problem": ai.problem["text"] if ai.problem["text"] and ai.problem.get("config") == ai.config_signature()
+                      and now - ai.problem["at"] < 6 * 3600 else ""}
     _brief[uid] = (now, out)
     return dict(out)
 

@@ -101,6 +101,9 @@ def main(data):
             ass = encode.call_args.args[-1]
             check("the renderer honors captions off even when it receives spoken words",
                   not has_dialogue(ass, "Cap") and has_dialogue(ass, "Hook", "KEEP THE HOOK"))
+            impact = render.build_ass(WORDS, 0, 4, "A CLUTCH MOMENT", "impact", [], 250, 1380)
+            check("Impact captions use the bold two-word cadence", "Style: Cap,Anton,150" in impact
+                  and has_dialogue(impact, "Cap", "SPOKEN"))
     finally:
         db.engine.dispose()
 

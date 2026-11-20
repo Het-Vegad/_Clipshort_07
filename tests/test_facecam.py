@@ -110,6 +110,11 @@ try:
     check("without a webcam the game simply fills the screen",
           "scale=1080:1920" in render._filter("gameplay", 1920, None) and "overlay=" not in render._filter("gameplay", 1920, None), True)
     check("the layout is offered to the user", "gameplay" in render.LAYOUTS, True)
+    reaction = render._filter("reaction", 1920, [0, 0, 300, 170])
+    check("reaction layout uses the bigger facecam", "scale=480:272" in reaction, True)
+    check("reaction layout has a bright frame", "drawbox=" in reaction, True)
+    check("reaction layout is offered to the user", "reaction" in render.LAYOUTS, True)
+    check("impact captions are offered", "impact" in render.STYLES, True)
     # the heading must not run under the webcam picture
     pip_h = 380 * 376 / 363
     check("the heading goes below the webcam picture", render._hook_y("gameplay", 300, [0, 0, 363, 376]) > 26 + pip_h, True)

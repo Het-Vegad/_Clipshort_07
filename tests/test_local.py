@@ -63,8 +63,8 @@ check("a custom service needs an address", put({"provider": "custom", "models": 
 check("an address must be a web address", put({"provider": "custom", "models": "m", "base_url": "file:///etc/passwd"}).status_code, 400)
 check("a model id cannot carry anything odd", put({"provider": "gemini", "models": "m\"}; drop", "key": KEY}).status_code, 400)
 check("saving from another website is refused", c.put("/api/ai", json={"provider": "gemini", "models": "m", "key": KEY}, headers={"Origin": "https://evil.example"}).status_code, 403)
-r = put({"provider": "gemini", "models": "model-a, model-b", "key": KEY})
-check("the key is saved", (r.status_code, r.json()["ready"], r.json()["models"], r.json()["key_hint"]), (200, True, ["model-a", "model-b"], "5678"))
+r = put({"provider": "gemini", "models": "model-a, model-b", "vision_model": "vision-a", "key": KEY})
+check("the key and separate vision model are saved", (r.status_code, r.json()["ready"], r.json()["models"], r.json()["vision_model"], r.json()["key_hint"]), (200, True, ["model-a", "model-b"], "vision-a", "5678"))
 check("the key itself is never sent back", KEY in r.text or KEY in c.get("/api/ai").text or KEY in c.get("/api/status").text, False)
 check("every page now says the AI is ready", c.get("/api/status").json()["ai"], lambda x: x["ready"] and x["provider"] == "Gemini" and x["model"] == "model-a")
 check("it is kept in the data folder", json.loads((config.DATA_DIR / "ai.json").read_text())["key"], KEY)
@@ -85,6 +85,7 @@ class Reply:
 
 
 asked = []
+posted_prompts = []
 
 
 def fake_get(url, params=None, headers=None, timeout=None):
@@ -98,8 +99,12 @@ def fake_get(url, params=None, headers=None, timeout=None):
 
 
 def fake_post(url, json=None, headers=None, timeout=None):  # noqa: A002
+    posted_prompts.append(str(json))
     if (headers or {}).get("x-goog-api-key") != KEY:
         return Reply(403, {"error": {"message": "bad key " + str((headers or {}).get("x-goog-api-key"))}})
+    if "Explain this ClipShorts software error" in str(json):
+        return Reply(200, {"candidates": [{"content": {"parts": [{"text": '{"cause":"The model is unavailable.","fix":"Choose another model and retry."}'}]}}],
+                            "usageMetadata": {"promptTokenCount": 9, "totalTokenCount": 12}})
     return Reply(200, {"candidates": [{"content": {"parts": [{"text": '["ok"]'}]}}], "usageMetadata": {"promptTokenCount": 9, "totalTokenCount": 12}})
 
 
@@ -114,6 +119,11 @@ check("a refused key is explained without repeating it", (r.status_code, "wrong-
 put({"provider": "gemini", "models": "g-fast", "key": KEY})
 r = post("/api/ai/test")
 check("the test asks the saved model and reports back", (r.status_code, r.json().get("model"), r.json().get("ok")), (200, "g-fast", True))
+reported = post("/api/error/explain", {"error": "HTTP 503 request failed for user@example.com api_key=secret-token"})
+check("Report returns a short AI explanation without opening a page", (reported.status_code, reported.json().get("summary")),
+      (200, "Likely cause: The model is unavailable.\nSuggested fix: Choose another model and retry."))
+check("error explanations do not send email addresses or API keys to the model",
+      "user@example.com" not in str(posted_prompts) and "secret-token" not in str(posted_prompts), True)
 put({"provider": "gemini", "models": "g-fast", "key": "wrong-key-000000000000"})
 r = post("/api/ai/test")
 check("a failed test says why, without the key", (r.status_code, "wrong-key-000000000000" in r.text), (502, False))

@@ -277,11 +277,20 @@ def download_section(url: str, out_dir: Path, stem: str, start: float, end: floa
     return _biggest(out_dir, stem)
 
 
-def find_offset(full: np.ndarray, part: np.ndarray, expected: float, search=20.0) -> float:
+def find_offset(full: np.ndarray | Path, part: np.ndarray, expected: float, search=20.0) -> float:
     """Where in the full audio (seconds) a downloaded piece really begins, by matching the sound itself."""
     n = min(len(part), 30 * 16000)
     a0 = max(0, int((expected - search) * 16000))
-    hay = full[a0: int((expected + search) * 16000) + n].astype(np.float32)
+    end = int((expected + search) * 16000) + n
+    if isinstance(full, (str, Path)):
+        with sf.SoundFile(str(full)) as audio_file:
+            if audio_file.samplerate != 16000:
+                raise ValueError("Audio must be sampled at 16 kHz.")
+            a0 = min(a0, len(audio_file))
+            audio_file.seek(a0)
+            hay = audio_file.read(max(0, min(end, len(audio_file)) - a0), dtype="int16").astype(np.float32)
+    else:
+        hay = full[a0:end].astype(np.float32)
     needle = part[:n].astype(np.float32)
     if n < 16000 or len(hay) < n or float(np.abs(needle).mean()) < 20:
         return expected  # too short or silent to match: trust the requested time
@@ -320,8 +329,43 @@ def load_audio(wav: Path) -> np.ndarray:
     return data
 
 
-def loudness_per_second(audio: np.ndarray) -> np.ndarray:
+def audio_samples(wav: Path) -> int:
+    """Get the sample count without loading the audio data into memory."""
+    with sf.SoundFile(str(wav)) as audio_file:
+        if audio_file.samplerate != 16000:
+            raise ValueError("Audio must be sampled at 16 kHz.")
+        return len(audio_file)
+
+
+def read_audio(wav: Path, start: int, end: int) -> np.ndarray:
+    """Read only the requested sample range from a long audio file."""
+    with sf.SoundFile(str(wav)) as audio_file:
+        if audio_file.samplerate != 16000:
+            raise ValueError("Audio must be sampled at 16 kHz.")
+        start = max(0, min(int(start), len(audio_file)))
+        end = max(start, min(int(end), len(audio_file)))
+        audio_file.seek(start)
+        return audio_file.read(end - start, dtype="int16")
+
+
+def loudness_per_second(audio: np.ndarray | Path, start: int = 0, end: int | None = None) -> np.ndarray:
     """RMS level in dB for each second of audio."""
+    if isinstance(audio, (str, Path)):
+        values = []
+        with sf.SoundFile(str(audio)) as audio_file:
+            if audio_file.samplerate != 16000:
+                raise ValueError("Audio must be sampled at 16 kHz.")
+            start = max(0, min(int(start), len(audio_file)))
+            end = len(audio_file) if end is None else max(start, min(int(end), len(audio_file)))
+            seconds = (end - start) // 16000
+            audio_file.seek(start)
+            for offset in range(0, seconds, 60):
+                count = min(60, seconds - offset)
+                chunk = audio_file.read(count * 16000, dtype="int16")
+                x = chunk.reshape(count, 16000).astype(np.float32) / 32768.0
+                rms = np.sqrt((x ** 2).mean(axis=1) + 1e-10)
+                values.append((20 * np.log10(rms)).astype(np.float32))
+        return np.concatenate(values) if values else np.zeros(1, dtype=np.float32)
     n = len(audio) // 16000
     if n == 0:
         return np.zeros(1, dtype=np.float32)

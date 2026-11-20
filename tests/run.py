@@ -13,6 +13,10 @@ import time
 import urllib.request
 from pathlib import Path
 
+for stream in (sys.stdout, sys.stderr):
+    if hasattr(stream, "reconfigure"):
+        stream.reconfigure(encoding="utf-8", errors="replace")
+
 ROOT = Path(__file__).resolve().parent.parent
 PORT = int(os.environ.get("PEAKCUT_TEST_PORT", "8799"))
 BASE = f"http://127.0.0.1:{PORT}"
@@ -22,6 +26,7 @@ def main() -> int:
     data = Path(tempfile.mkdtemp(prefix="peakcut-test-"))
     env = {**os.environ, "PEAKCUT_DATA": str(data), "PEAKCUT_PORT": str(PORT), "PEAKCUT_PUBLIC_URL": BASE,
            "PEAKCUT_HOST": "127.0.0.1", "PEAKCUT_AUTO_RELOAD": "0", "DATABASE_URL": "",
+           "PYTHONIOENCODING": "utf-8",
            "PEAKCUT_ACCOUNTS": "1", "PEAKCUT_FETCH_MODEL": "0", "PEAKCUT_UPDATE_CHECK": "0",                   # these tests are about people signing in; tests/test_local.py covers the default
            # nothing outside this machine is contacted: no AI, no email, no Google sign-in
            "PEAKCUT_SMTP_HOST": "", "PEAKCUT_VERIFY_EMAIL": "1",   # the tests cover the confirm-your-email rule
@@ -51,6 +56,7 @@ def main() -> int:
                 ("deleting and bulk actions", ["tests/test_delete.py"]),
                 ("big uploads in pieces", ["tests/test_upload_parts.py", BASE]),
                 ("AI services", ["tests/test_ai.py"]),
+                ("YouTube upload-limit queue holds", ["tests/test_posting.py"]),
                 ("no sign-in, and the AI key from the dashboard", ["tests/test_local.py"]),
                 ("Hindi and Urdu captions in Roman letters", ["tests/test_roman.py"]),
                 ("turning captions off and back on", ["tests/test_captions.py"]),
@@ -62,6 +68,7 @@ def main() -> int:
                 ("answers that are not quite right", ["tests/test_answer.py"]),
                 ("knowing which game a stream is", ["tests/test_games.py"]),
                 ("finding the facecam in a gaming stream", ["tests/test_facecam.py"]),
+                ("visual candidate review", ["tests/test_visual.py"]),
                 ("fresh installs: ffmpeg, the speech model, AI errors", ["tests/test_tools.py"]),
                 ("the storage folder: full drive, open, move", ["tests/test_storage.py"]),
                 ("security: visitor address, email addresses, Google sign-in, prompts", ["tests/test_hardening.py"]),

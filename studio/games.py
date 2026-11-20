@@ -20,7 +20,7 @@ import re
 # name, words that mean it, tags to put on the post
 GAMES: list[tuple[str, list[str], list[str]]] = [
     ("Grand Theft Auto VI", ["grand theft auto vi", "grand theft auto 6", "gta vi", "gta 6", "gta6"],
-     ["GTA6", "GTA6Game", "ViceCity", "RockstarGames", "GTA6Launch"]),
+     ["GTA6", "GTAVI", "Gaming", "GamingShorts", "ViceCity"]),
     ("Grand Theft Auto V", ["grand theft auto v", "grand theft auto 5", "gta online", "gta v", "gta 5", "gta5", "gtav"],
      ["GTA5", "GTAOnline", "RockstarGames", "GTA5RP"]),
     ("Grand Theft Auto IV", ["grand theft auto iv", "gta 4", "gta4"], ["GTA4", "RockstarGames"]),
@@ -93,5 +93,11 @@ def tags_of(game: str | None) -> list[str]:
     g = _norm(game)
     for name, aliases, tags in GAMES:
         if g == _norm(name) or g in {_norm(a) for a in aliases} or g in {_norm(t) for t in tags}:
+            return list(tags)
+    # Clip-specific tags like GTA6Launch still belong to the game's canonical set.
+    generic_tags = {"gaming", "gameplay", "gamingshorts", "gamingclips", "survival", "heroes", "esports"}
+    for _name, _aliases, tags in GAMES:
+        if any(_norm(tag) not in generic_tags and (any(ch.isdigit() for ch in _norm(tag)) or len(_norm(tag)) >= 8)
+               and g.startswith(_norm(tag)) and len(g) > len(_norm(tag)) for tag in tags):
             return list(tags)
     return [re.sub(r"\W", "", str(game))[:30]] if re.sub(r"\W", "", str(game)) else []
