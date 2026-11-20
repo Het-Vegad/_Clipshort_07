@@ -82,7 +82,10 @@ def install_fonts():
 
 LAYOUTS = {"blur": "Full frame + blurred fill", "zoom": "Zoomed in + blurred fill", "crop": "Fill the screen (centre crop)",
            "gameplay": "Gameplay fills the screen, facecam in the corner",
-           "reaction": "Reaction focus · larger facecam + gameplay"}
+           "reaction": "Reaction focus · larger facecam + gameplay",
+           "stacked": "Facecam above gameplay", "split": "Gameplay + facecam side by side",
+           "bottomcam": "Gameplay + facecam below", "wide": "Wide gameplay · blurred background",
+           "action": "Action zoom · full-screen gameplay"}
 
 
 def _ts(t):
@@ -114,16 +117,22 @@ def _groups(words, per):
 
 def geometry(src_w, src_h, layout):
     """Where the video sits in the 1080x1920 frame, and where hook and captions go."""
-    if src_h >= src_w and layout != "crop":
+    if src_h >= src_w and layout in ("blur", "zoom", "wide", "action"):
         layout = "crop"  # already vertical or square: nothing to gain from a blurred fill
     if layout == "blur":
         fg_h = min(H, int(round(W * src_h / src_w / 2)) * 2)
     elif layout == "zoom":
         fg_h = 1000
+    elif layout == "wide":
+        fg_h = int(round(W * 9 / 16 / 2)) * 2
     else:
         fg_h = H
     top = (H - fg_h) // 2
-    if layout in ("crop", "gameplay", "reaction"):
+    if layout in ("crop", "gameplay", "reaction", "stacked", "split", "bottomcam", "action"):
+        if layout in ("stacked", "split"):
+            return layout, fg_h, 180, 1510
+        if layout == "bottomcam":
+            return layout, fg_h, 250, 1190
         return layout, fg_h, 300, 1380
     return layout, fg_h, max(230, top - 190), min(1640, top + fg_h + 180)
 
@@ -237,18 +246,46 @@ PIP_MARGIN = 26
 
 
 def _filter(layout, fg_h, facecam=None):
-    if layout in ("gameplay", "reaction") and facecam:
+    if layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") and facecam:
         # The game fills the screen, and the webcam sits in the top corner of it, so a viewer sees
         # the play and the face at the same time.
         fx, fy, fw, fh = (int(v) for v in facecam)
         if fw > 8 and fh > 8:
             pip_w = REACTION_PIP_W if layout == "reaction" else PIP_W
             pip_h = max(2, int(round(pip_w * fh / fw)))
+            if layout == "stacked":
+                cam_h = int(H * 0.36)
+                game_h = H - cam_h
+                return (f"[0:v]fps={config.OUT_FPS},split=2[game][fc];"
+                        f"[game]scale={W}:{game_h}:force_original_aspect_ratio=increase,crop={W}:{game_h},setsar=1[g];"
+                        f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={W}:{cam_h}:force_original_aspect_ratio=increase,crop={W}:{cam_h},setsar=1[f];"
+                        f"[f][g]vstack=inputs=2,setsar=1[v0];")
+            if layout == "split":
+                game_w = int(W * 0.62)
+                cam_w = W - game_w
+                return (f"[0:v]fps={config.OUT_FPS},split=2[game][fc];"
+                        f"[game]scale={game_w}:{H}:force_original_aspect_ratio=increase,crop={game_w}:{H},setsar=1[g];"
+                        f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={cam_w}:{H}:force_original_aspect_ratio=increase,crop={cam_w}:{H},setsar=1[f];"
+                        f"[g][f]hstack=inputs=2,setsar=1[v0];")
+            if layout == "bottomcam":
+                pip_h = max(2, int(round(pip_w * fh / fw)))
+                return (f"[0:v]fps={config.OUT_FPS},split=2[base][fc];"
+                        f"[base]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[b];"
+                        f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={pip_w}:{pip_h},setsar=1,drawbox=x=0:y=0:w=iw:h=ih:color=white@0.95:t=4[p];"
+                        f"[b][p]overlay={W - pip_w - PIP_MARGIN}:{H - pip_h - PIP_MARGIN}[v0];")
             return (f"[0:v]fps={config.OUT_FPS},split=2[base][fc];"
                     f"[base]scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[b];"
                     f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={pip_w}:{pip_h},setsar=1,drawbox=x=0:y=0:w=iw:h=ih:color=white@0.95:t=4[p];"
                     f"[b][p]overlay={W - pip_w - PIP_MARGIN}:{PIP_MARGIN}[v0];")
-    if layout == "crop" or (layout in ("gameplay", "reaction") and not facecam):
+    if layout == "action":
+        return f"[0:v]fps={config.OUT_FPS},scale={int(W * 1.12)}:{int(H * 1.12)}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[v0];"
+    if layout == "wide":
+        return (f"[0:v]fps={config.OUT_FPS},split=2[a][b];"
+                f"[a]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=8:3,"
+                f"scale={W}:{H},eq=brightness=-0.16:saturation=1.12[bg];"
+                f"[b]scale={W}:{fg_h}:force_original_aspect_ratio=increase,crop={W}:{fg_h}[fg];"
+                f"[bg][fg]overlay=0:(H-h)/2,setsar=1[v0];")
+    if layout == "crop" or (layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") and not facecam):
         return f"[0:v]fps={config.OUT_FPS},scale={W}:{H}:force_original_aspect_ratio=increase,crop={W}:{H},setsar=1[v0];"
     return (f"[0:v]fps={config.OUT_FPS},split=2[a][b];"
             f"[a]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,boxblur=6:2,"
@@ -260,7 +297,7 @@ def _filter(layout, fg_h, facecam=None):
 def _hook_y(layout, hook_y, facecam=None):
     """Where the heading goes. In the gameplay layout the webcam sits in the top corner, so a heading
     across the top would run under it: it goes just below the picture instead."""
-    if layout in ("gameplay", "reaction") and facecam and len(facecam) == 4 and facecam[2] > 8:
+    if layout in ("gameplay", "reaction", "bottomcam") and facecam and len(facecam) == 4 and facecam[2] > 8:
         pip_w = REACTION_PIP_W if layout == "reaction" else PIP_W
         return PIP_MARGIN + int(round(pip_w * facecam[3] / facecam[2])) + 32
     return hook_y
@@ -276,7 +313,7 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     start, end = clip["start"], clip["end"]
     layout, fg_h, hook_y, cap_y = geometry(src_w, src_h, clip.get("layout", "blur"))
     face = clip.get("facecam")
-    if layout in ("gameplay", "reaction") and not (face and len(face) == 4):
+    if layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") and not (face and len(face) == 4):
         layout = "crop"     # no webcam found: the game fills the screen, which is still the right shape
     hook_y = _hook_y(layout, hook_y, face)
     ass = build_ass(words if clip.get("captions", True) else [], start, end, clip.get("hook", ""), clip.get("style", "bounce"),

@@ -1051,7 +1051,7 @@ def _run_job(job):
             c["hashtags"] = posting._personal_hashtags(job, c)
             # Only the gameplay layout uses a webcam, so it is only looked for then, and only once: a
             # stream with no webcam is not looked for again on every clip of it.
-            if o["layout"] in ("gameplay", "reaction") and face is False:
+            if o["layout"] in ("gameplay", "reaction", "stacked", "split", "bottomcam") and face is False:
                 face = _facecam(job)
             if face:
                 c["facecam"] = face

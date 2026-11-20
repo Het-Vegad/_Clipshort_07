@@ -613,9 +613,8 @@ class Session:
             return
         finally:
             lst.unlink(missing_ok=True)
-        # Only the gameplay layout uses a webcam, and only once the clip's own file is written: the
-        # webcam is looked for in it, once per stream.
-        if clip.get("layout") in ("gameplay", "reaction"):
+        # Facecam layouts need a detected webcam; look for it once per stream.
+        if clip.get("layout") in ("gameplay", "reaction", "stacked", "split", "bottomcam"):
             if not self.facecam_checked:
                 self.facecam_box = self._find_facecam(src)
                 self.facecam_checked = True
