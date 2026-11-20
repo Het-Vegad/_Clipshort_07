@@ -245,7 +245,44 @@ REACTION_PIP_W = 480
 PIP_MARGIN = 26
 
 
-def _filter(layout, fg_h, facecam=None):
+def _game_panel_crop(src_w, src_h, out_w, out_h, facecam=None):
+    """Crop the wide game view to the panel shape, avoiding its embedded webcam when possible."""
+    src_w, src_h = max(2, int(src_w or 1920)), max(2, int(src_h or 1080))
+    target = out_w / out_h
+    if src_w / src_h > target:
+        crop_h = src_h - src_h % 2
+        crop_w = min(src_w - src_w % 2, int(crop_h * target) // 2 * 2)
+        max_x, max_y = src_w - crop_w, 0
+        x_candidates = {0, max_x, max_x // 2}
+        y_candidates = {0}
+    else:
+        crop_w = src_w - src_w % 2
+        crop_h = min(src_h - src_h % 2, int(crop_w / target) // 2 * 2)
+        max_x, max_y = 0, src_h - crop_h
+        x_candidates = {0}
+        y_candidates = {0, max_y, max_y // 2}
+
+    if facecam and len(facecam) == 4:
+        fx, fy, fw, fh = (float(v) for v in facecam)
+        if max_x:
+            x_candidates.update((max(0, min(max_x, int(fx - crop_w))),
+                                 max(0, min(max_x, int(fx + fw)))) )
+        if max_y:
+            y_candidates.update((max(0, min(max_y, int(fy - crop_h))),
+                                 max(0, min(max_y, int(fy + fh)))) )
+
+        def overlap(x, y):
+            return (max(0, min(x + crop_w, fx + fw) - max(x, fx)) *
+                    max(0, min(y + crop_h, fy + fh) - max(y, fy)))
+
+        x = min(x_candidates, key=lambda value: (overlap(value, min(y_candidates)), abs(value - max_x / 2)))
+        y = min(y_candidates, key=lambda value: (overlap(x, value), abs(value - max_y / 2)))
+    else:
+        x, y = max_x // 2, max_y // 2
+    return int(x) // 2 * 2, int(y) // 2 * 2, crop_w, crop_h
+
+
+def _filter(layout, fg_h, facecam=None, src_w=1920, src_h=1080):
     if layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") and facecam:
         # The game fills the screen, and the webcam sits in the top corner of it, so a viewer sees
         # the play and the face at the same time.
@@ -254,23 +291,19 @@ def _filter(layout, fg_h, facecam=None):
             pip_w = REACTION_PIP_W if layout == "reaction" else PIP_W
             pip_h = max(2, int(round(pip_w * fh / fw)))
             if layout == "stacked":
-                cam_h = int(H * 0.36)
+                cam_h = int(H * 0.36) // 2 * 2
                 game_h = H - cam_h
+                gx, gy, gw, gh = _game_panel_crop(src_w, src_h, W, game_h, facecam)
                 return (f"[0:v]fps={config.OUT_FPS},split=2[game][fc];"
-                        f"[game]split=2[gbg0][gfg0];"
-                        f"[gbg0]scale={W}:{game_h}:force_original_aspect_ratio=increase,crop={W}:{game_h},boxblur=14:2,eq=brightness=-0.16:saturation=1.08[gbg];"
-                        f"[gfg0]scale={W}:{game_h}:force_original_aspect_ratio=decrease,setsar=1[gfg];"
-                        f"[gbg][gfg]overlay=(W-w)/2:(H-h)/2:shortest=1,setsar=1[g];"
+                        f"[game]crop={gw}:{gh}:{gx}:{gy},scale={W}:{game_h},setsar=1[g];"
                         f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={W}:{cam_h}:force_original_aspect_ratio=increase,crop={W}:{cam_h},setsar=1[f];"
                         f"[f][g]vstack=inputs=2,setsar=1[v0];")
             if layout == "bottomcam":
-                cam_h = int(H * 0.36)
+                cam_h = int(H * 0.36) // 2 * 2
                 game_h = H - cam_h
+                gx, gy, gw, gh = _game_panel_crop(src_w, src_h, W, game_h, facecam)
                 return (f"[0:v]fps={config.OUT_FPS},split=2[game][fc];"
-                        f"[game]split=2[gbg0][gfg0];"
-                        f"[gbg0]scale={W}:{game_h}:force_original_aspect_ratio=increase,crop={W}:{game_h},boxblur=14:2,eq=brightness=-0.16:saturation=1.08[gbg];"
-                        f"[gfg0]scale={W}:{game_h}:force_original_aspect_ratio=decrease,setsar=1[gfg];"
-                        f"[gbg][gfg]overlay=(W-w)/2:(H-h)/2:shortest=1,setsar=1[g];"
+                        f"[game]crop={gw}:{gh}:{gx}:{gy},scale={W}:{game_h},setsar=1[g];"
                         f"[fc]crop={fw}:{fh}:{fx}:{fy},scale={W}:{cam_h}:force_original_aspect_ratio=increase,crop={W}:{cam_h},setsar=1[f];"
                         f"[g][f]vstack=inputs=2,setsar=1[v0];")
             if layout == "split":
@@ -305,12 +338,12 @@ def _hook_y(layout, hook_y, facecam=None):
     """Where the heading goes. In the gameplay layout the webcam sits in the top corner, so a heading
     across the top would run under it: it goes just below the picture instead."""
     if layout == "stacked":
-        cam_h = int(H * 0.36)
+        cam_h = int(H * 0.36) // 2 * 2
         game_h = H - cam_h
         game_top = cam_h + (game_h - int(W * 9 / 16)) // 2
         return game_top + 70  # place the hook on the gameplay image, below the facecam panel
     if layout == "bottomcam":
-        game_h = H - int(H * 0.36)
+        game_h = H - int(H * 0.36) // 2 * 2
         game_top = (game_h - int(W * 9 / 16)) // 2
         return game_top + 70  # place the hook on the gameplay image, above the facecam panel
     if layout in ("gameplay", "reaction") and facecam and len(facecam) == 4 and facecam[2] > 8:
@@ -342,18 +375,19 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     # break the filter syntax).
     work = Path(tempfile.mkdtemp(prefix="pk"))
     try:
-        return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass, face=face)
+        return _render_in(work, src, out_dir, name, start, end, layout, fg_h, ass, face=face, src_w=src_w, src_h=src_h)
     finally:
         shutil.rmtree(work, ignore_errors=True)
 
 
-def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str, face=None) -> dict:
+def _render_in(work: Path, src: Path, out_dir: Path, name: str, start, end, layout, fg_h, ass: str, face=None,
+               src_w=1920, src_h=1080) -> dict:
     global _qsv_ok
     (work / f"{name}.ass").write_text(ass, encoding="utf-8")
     (work / "f").mkdir()
     for f in config.FONTS_DIR.glob("*.ttf"):
         shutil.copyfile(f, work / "f" / f.name)
-    fc = _filter(layout, fg_h, face) + f"[v0]ass={name}.ass:fontsdir=f[v]"
+    fc = _filter(layout, fg_h, face, src_w, src_h) + f"[v0]ass={name}.ass:fontsdir=f[v]"
     base = ["ffmpeg", "-y", "-v", "error", "-ss", f"{start:.2f}", "-t", f"{end - start:.2f}", "-i", str(src),
             "-filter_complex", fc, "-map", "[v]", "-map", "0:a:0", "-af", "loudnorm=I=-14:TP=-1.5:LRA=11",
             "-c:a", "aac", "-b:a", "160k", "-ar", "48000", "-movflags", "+faststart", "-pix_fmt"]

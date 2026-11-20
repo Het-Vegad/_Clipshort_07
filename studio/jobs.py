@@ -586,11 +586,8 @@ def create_layout_variants(jid, layouts):
         candidate_source = job.get("source_path") or next((c.get("src") for c in bases if c.get("src") and Path(c["src"]).is_file()), None)
         if candidate_source:
             try:
-                found = facecam.detect(candidate_source, ask=brain.look_for_facecam,
-                                       require_visual=any(layout in ("stacked", "bottomcam") for _, layout in pairs))
-                if found and found.get("conf") == "high":
-                    face_box = [found["x"], found["y"], found["w"], found["h"]]
-                    job["facecam"] = face_box
+                face_box = _facecam(job, candidate_source,
+                                    require_visual=any(layout in ("stacked", "bottomcam") for _, layout in pairs))
             except Exception:  # noqa: BLE001 - a facecam search failure should not block other layouts
                 pass
     if not face_box and any(layout in ("stacked", "bottomcam") for _, layout in pairs):
@@ -812,6 +809,22 @@ def _facecam(job, source_path=None, require_visual=False) -> list | None:
     what it says is measured again on the picture, so it cannot do any harm."""
     if job.get("facecam"):
         return job["facecam"]
+    # A creator can keep a verified, normalized camera position. Stream layouts tend to stay
+    # fixed for that channel, and this avoids asking vision for every new upload.
+    try:
+        profile = (creators.get(job.get("creator")) or {}).get("facecam") if job.get("creator") else None
+        if isinstance(profile, (list, tuple)) and len(profile) == 4:
+            width, height = int(job.get("width") or 0), int(job.get("height") or 0)
+            if (not width or not height) and source_path and Path(source_path).is_file():
+                width, height = facecam._size(source_path)
+            if width > 0 and height > 0:
+                box = [round(float(profile[0]) * width), round(float(profile[1]) * height),
+                       round(float(profile[2]) * width), round(float(profile[3]) * height)]
+                if box[2] > 0 and box[3] > 0 and box[0] + box[2] <= width and box[1] + box[3] <= height:
+                    job["facecam"] = box
+                    return box
+    except (TypeError, ValueError, OSError):
+        pass
     if job.get("_facecam_checked"):
         return None
     path = job.get("source_path") or source_path

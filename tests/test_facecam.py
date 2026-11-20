@@ -62,12 +62,20 @@ try:
 
     # ---- the job hands the webcam on to the render
     from studio import jobs
+    from studio import creators, ctx
     job = {"source_path": cam}
     box = jobs._facecam(job)
     check("the job finds the webcam for its clips", bool(box), True)
     check("the job keeps it on the job", "facecam" in job, True)
     check("the box is the right size", abs(box[2] - 300) <= 1 and abs(box[3] - 170) <= 1, True)
     check("a job with no video finds no webcam", jobs._facecam({"source_path": os.path.join(work, "nope.mp4")}), None)
+
+    with ctx.as_user("u_local"):
+        profile = creators.create({"name": "Facecam profile test"})
+        creators.update(profile["id"], {"facecam": [0.79, 0.11, 0.20, 0.22]})
+        profiled_job = {"creator": profile["id"], "width": 1920, "height": 1080}
+        check("a creator's saved facecam position is reused on new uploads",
+              jobs._facecam(profiled_job), [1517, 119, 384, 238])
 
     # ---- a webcam that is square and runs along one edge, not into a corner
     sq = make("cam_sq.mp4", "color=c=0xC08050:size=360x355:rate=25", where="920:165")
@@ -117,10 +125,14 @@ try:
     check("reaction layout is offered to the user", "reaction" in render.LAYOUTS, True)
     stacked = render._filter("stacked", 1920, [0, 0, 300, 170])
     check("facecam-above puts the camera before gameplay", "[f][g]vstack" in stacked, True)
-    check("facecam-above preserves the full gameplay width", "force_original_aspect_ratio=decrease" in stacked, True)
+    check("facecam-above fills the gameplay panel with a crop that excludes its corner camera",
+          "crop=948:1080:486:0,scale=1080:1230" in stacked, True)
     bottomcam = render._filter("bottomcam", 1920, [0, 0, 300, 170])
     check("facecam-below puts gameplay before the camera", "[g][f]vstack" in bottomcam, True)
-    check("facecam-below preserves the full gameplay width", "force_original_aspect_ratio=decrease" in bottomcam, True)
+    check("facecam-below fills the gameplay panel with a crop that excludes its corner camera",
+          "crop=948:1080:486:0,scale=1080:1230" in bottomcam, True)
+    gx, gy, gw, gh = render._game_panel_crop(1920, 1080, 1080, 1230, [1518, 122, 378, 236])
+    check("the game zoom crop stays clear of the upper-right webcam", gx + gw <= 1518 or gx >= 1896, True)
     check("facecam-above title sits over the gameplay picture", render._hook_y("stacked", 180) > int(render.H * 0.36), True)
     check("facecam-below title sits inside the gameplay panel", render._hook_y("bottomcam", 250) < int(render.H * 0.64), True)
     try:

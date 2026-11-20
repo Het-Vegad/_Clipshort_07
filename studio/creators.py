@@ -21,7 +21,7 @@ DEFAULTS = {"name": "", "channel": "", "style": "bounce", "layout": "blur", "cap
             "trigger_words": "clip that, clip it",
             "autopost": False, "accounts": [], "post_min_score": 75, "post_gap_min": 10, "daily_cap": 100,
             "privacy": "public", "post_footer": "", "delete_after_post": True,
-            "rate_per_1k": 0.0, "channels": {}}
+            "rate_per_1k": 0.0, "channels": {}, "facecam": None}
 PLATFORMS = ("youtube", "twitch", "kick")
 
 
@@ -75,6 +75,15 @@ def _clean(data: dict) -> dict:
             v = [str(x) for x in v][:20] if isinstance(v, list) else []
         elif k == "rate_per_1k":
             v = max(0.0, min(1000.0, float(v or 0)))
+        elif k == "facecam":
+            if not isinstance(v, (list, tuple)) or len(v) != 4:
+                raise ValueError("Facecam position must contain x, y, width, and height as frame fractions.")
+            try:
+                v = [float(x) for x in v]
+            except (TypeError, ValueError) as e:
+                raise ValueError("Facecam position must contain numeric frame fractions.") from e
+            if any(not 0 <= x <= 1 for x in v) or v[2] <= 0 or v[3] <= 0 or v[0] + v[2] > 1 or v[1] + v[3] > 1:
+                raise ValueError("Facecam position must stay inside the frame.")
         elif k == "plan":
             v = v if v in ("free", "pro", "max") else "free"
         elif k == "decide_mode":

@@ -484,13 +484,15 @@ NOT_MUST = "Most checks should return []. Only return a moment you would stop sc
 
 FACE_CAM = """One frame of a gaming stream is attached.
 
-A streamer often puts a small picture of their own webcam in a corner of the stream, next to the game.
-Is the streamer's own face on this frame? A real person, filmed by a camera, sitting in a room. Not a
-character in the game, not a picture inside a game menu, not someone in a video the game is playing.
+Find the small rectangular webcam overlay showing the streamer. Give the OUTER EDGES of the entire webcam
+picture, including its background, chair and rounded border. Do not box only the person's face or head.
+The picture is usually a wide inset in a corner. Use x,y for its upper-left outer corner and w,h for its
+full width and height, as percentages of the complete attached frame. Inspect all four edges before answering.
+Do not mistake game HUD elements or a character for the webcam.
 
 Answer in one line and nothing else:
-  CAM x=..% y=..% w=..% h=..%     the webcam picture, as parts of the whole frame; x,y is its top left corner
-  NO CAM                         there is no webcam on this frame"""
+  CAM x=..% y=..% w=..% h=..%     outer box of the full webcam overlay
+  NO CAM                         there is no webcam overlay on this frame"""
 
 _FACE_BOX = re.compile(r"x\s*=\s*(\d+(?:\.\d+)?)\s*%?\s*,?\s*y\s*=\s*(\d+(?:\.\d+)?)\s*%?\s*"
                        r",?\s*w\s*=\s*(\d+(?:\.\d+)?)\s*%?\s*,?\s*h\s*=\s*(\d+(?:\.\d+)?)", re.I)
