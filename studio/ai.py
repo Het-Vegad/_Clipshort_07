@@ -340,7 +340,12 @@ def test() -> dict:
             return {"ok": True, "model": model, "tokens": sent + wrote, "answer": str(out)[:80]}
         except Exception as e:  # noqa: BLE001
             last = e
-            if not (getattr(e, "status_code", None) == 503 or "HTTP 503" in str(e)):
+            # Groq may exhaust the selected model's daily limit while a backup model still has quota.
+            # Try compatible backup models on rate limits and temporary overloads before declaring
+            # the whole provider unavailable. Key rotation happens inside call() for each model.
+            retryable = getattr(e, "status_code", None) in (429, 503) or any(
+                f"HTTP {code}" in str(e) for code in (429, 503))
+            if not retryable:
                 break
     note_problem(last)
     raise RuntimeError(f"The AI did not answer: {explain(last) or last}")
