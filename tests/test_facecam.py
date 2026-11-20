@@ -5,6 +5,7 @@ border that stays in the same place in every frame.
 
 Runs against the code directly, with its own empty data folder."""
 import os, shutil, subprocess, sys, tempfile
+from pathlib import Path
 os.environ["PEAKCUT_DATA"] = tempfile.mkdtemp(prefix="pc-facecam-")
 sys.path.insert(0, ".")
 from studio import facecam, render
@@ -114,6 +115,20 @@ try:
     check("reaction layout uses the bigger facecam", "scale=480:272" in reaction, True)
     check("reaction layout has a bright frame", "drawbox=" in reaction, True)
     check("reaction layout is offered to the user", "reaction" in render.LAYOUTS, True)
+    stacked = render._filter("stacked", 1920, [0, 0, 300, 170])
+    check("facecam-above puts the camera before gameplay", "[f][g]vstack" in stacked, True)
+    check("facecam-above preserves the full gameplay width", "force_original_aspect_ratio=decrease" in stacked, True)
+    bottomcam = render._filter("bottomcam", 1920, [0, 0, 300, 170])
+    check("facecam-below puts gameplay before the camera", "[g][f]vstack" in bottomcam, True)
+    check("facecam-below preserves the full gameplay width", "force_original_aspect_ratio=decrease" in bottomcam, True)
+    check("facecam-above title sits over the gameplay picture", render._hook_y("stacked", 180) > int(render.H * 0.36), True)
+    check("facecam-below title sits inside the gameplay panel", render._hook_y("bottomcam", 250) < int(render.H * 0.64), True)
+    try:
+        render.render_clip(Path(cam), Path(work), "no_cam", {"start": 0, "end": 2, "layout": "stacked"}, [], 1280, 720)
+        no_cam_error = False
+    except ValueError as e:
+        no_cam_error = "needs a detected facecam" in str(e)
+    check("a requested stacked layout does not silently become a plain crop", no_cam_error, True)
     check("impact captions are offered", "impact" in render.STYLES, True)
     # the heading must not run under the webcam picture
     pip_h = 380 * 376 / 363

@@ -587,12 +587,14 @@ def create_layout_variants(jid, layouts):
         if candidate_source:
             try:
                 found = facecam.detect(candidate_source, ask=brain.look_for_facecam,
-                                       require_visual=any(layout == "stacked" for _, layout in pairs))
+                                       require_visual=any(layout in ("stacked", "bottomcam") for _, layout in pairs))
                 if found and found.get("conf") == "high":
                     face_box = [found["x"], found["y"], found["w"], found["h"]]
                     job["facecam"] = face_box
             except Exception:  # noqa: BLE001 - a facecam search failure should not block other layouts
                 pass
+    if not face_box and any(layout in ("stacked", "bottomcam") for _, layout in pairs):
+        raise ValueError("ClipShorts could not confirm a facecam in this video, so it did not queue these layouts. Check that the source has a visible facecam and that AI Settings has a working vision model, then try again.")
     made = []
     for base, layout in pairs:
         variant = copy.deepcopy(base)
@@ -653,7 +655,7 @@ def render_one(job, clip, words):
         off = clip.get("src_offset", 0.0)
         src = Path(clip["src"]) if clip.get("src") else Path(job["source_path"])
         if clip.get("layout") in ("gameplay", "reaction", "stacked", "split", "bottomcam") and not clip.get("facecam"):
-            box = _facecam(job, src, require_visual=clip.get("layout") == "stacked")
+            box = _facecam(job, src, require_visual=clip.get("layout") in ("stacked", "bottomcam"))
             if box:
                 clip["facecam"] = box
         if not clip.get("src"):
@@ -1112,7 +1114,7 @@ def _run_job(job):
             # Only the gameplay layout uses a webcam, so it is only looked for then, and only once: a
             # stream with no webcam is not looked for again on every clip of it.
             if o["layout"] in ("gameplay", "reaction", "stacked", "split", "bottomcam") and face is False:
-                face = _facecam(job, require_visual=o["layout"] == "stacked")
+                face = _facecam(job, require_visual=o["layout"] in ("stacked", "bottomcam"))
             if face:
                 c["facecam"] = face
             job["clips"].append(c)
