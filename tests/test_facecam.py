@@ -135,6 +135,13 @@ try:
     check("the game zoom crop stays clear of the upper-right webcam", gx + gw <= 1518 or gx >= 1896, True)
     check("facecam-above title sits over the gameplay picture", render._hook_y("stacked", 180) > int(render.H * 0.36), True)
     check("facecam-below title sits inside the gameplay panel", render._hook_y("bottomcam", 250) < int(render.H * 0.64), True)
+    above_geom = render.geometry(1920, 1080, "stacked")
+    below_geom = render.geometry(1920, 1080, "bottomcam")
+    check("facecam-above captions sit at the facecam/gameplay seam", above_geom[3], int(render.H * 0.36) // 2 * 2)
+    check("facecam-below captions sit near the top", below_geom[3] < 300, True)
+    check("facecam-above removes the large hook banner", render._layout_hook("stacked", "BIG HOOK"), "")
+    check("facecam-below removes the large hook banner", render._layout_hook("bottomcam", "BIG HOOK"), "")
+    check("other layouts keep their hook banner", render._layout_hook("gameplay", "BIG HOOK"), "BIG HOOK")
     try:
         render.render_clip(Path(cam), Path(work), "no_cam", {"start": 0, "end": 2, "layout": "stacked"}, [], 1280, 720)
         no_cam_error = False

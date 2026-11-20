@@ -129,10 +129,12 @@ def geometry(src_w, src_h, layout):
         fg_h = H
     top = (H - fg_h) // 2
     if layout in ("crop", "gameplay", "reaction", "stacked", "split", "bottomcam", "action"):
-        if layout in ("stacked", "split"):
+        if layout == "stacked":
+            return layout, fg_h, 180, int(H * 0.36) // 2 * 2
+        if layout == "split":
             return layout, fg_h, 180, 1510
         if layout == "bottomcam":
-            return layout, fg_h, 250, 1190
+            return layout, fg_h, 250, 250
         return layout, fg_h, 300, 1380
     return layout, fg_h, max(230, top - 190), min(1640, top + fg_h + 180)
 
@@ -352,6 +354,11 @@ def _hook_y(layout, hook_y, facecam=None):
     return hook_y
 
 
+def _layout_hook(layout, hook):
+    """Facecam stacks use spoken captions only; the large hook banner obscures both panels."""
+    return "" if layout in ("stacked", "bottomcam") else hook
+
+
 _qsv_ok = None
 RENDER_SECONDS = 600      # one clip's video encode; far beyond normal, so a frozen encoder is stopped, not waited on
 
@@ -367,7 +374,8 @@ def render_clip(src: Path, out_dir: Path, name: str, clip: dict, words: list, sr
     if layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") and not (face and len(face) == 4):
         layout = "crop"     # no webcam found: the game fills the screen, which is still the right shape
     hook_y = _hook_y(layout, hook_y, face)
-    ass = build_ass(words if clip.get("captions", True) else [], start, end, clip.get("hook", ""), clip.get("style", "bounce"),
+    ass = build_ass(words if clip.get("captions", True) else [], start, end,
+                    _layout_hook(layout, clip.get("hook", "")), clip.get("style", "bounce"),
                     clip.get("highlight_words", []), hook_y, cap_y)
     # The clip is made in a short work folder and moved into place afterwards. The caption step of ffmpeg cannot
     # open files whose full path is longer than 260 characters on Windows, which a data folder deep inside other
