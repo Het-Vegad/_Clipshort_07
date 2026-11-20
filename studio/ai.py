@@ -144,7 +144,7 @@ def current() -> dict:
                     ("qwen/qwen3.8-27b" if ALIASES.get(p, p) == "groq" else ""))
     if d.get("provider"):
         raw_keys = d.get("keys") if isinstance(d.get("keys"), list) else [d.get("key", "")]
-        api_keys = list(dict.fromkeys(str(v).strip()[:400] for v in raw_keys if str(v).strip()))[:10]
+        api_keys = list(dict.fromkeys(str(v).strip()[:400] for v in raw_keys if str(v).strip()))[:20]
     else:
         env_key = config.ai_key()
         api_keys = [env_key] if env_key else []
@@ -273,8 +273,8 @@ def save(provider_id: str, model_ids, address: str = "", new_key=None, vision_mo
         key_pool = []
     elif api_keys:
         additions = api_keys if isinstance(api_keys, list) else str(api_keys).splitlines()
-        additions = [str(v).strip()[:400] for v in additions if str(v).strip()][:10]
-        key_pool = list(dict.fromkeys(key_pool + additions))[:10]
+        additions = [str(v).strip()[:400] for v in additions if str(v).strip()][:20]
+        key_pool = list(dict.fromkeys(key_pool + additions))[:20]
     elif new_key is not None:
         entered = str(new_key or "").strip()[:400]
         key_pool = [entered] if entered else []
