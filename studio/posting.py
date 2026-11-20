@@ -563,6 +563,48 @@ def reschedule_all() -> int:
     return len(changed)
 
 
+def shuffle_pending() -> int:
+    """Randomize only this user's local pending order, then assign safe spaced publish slots."""
+    uid, now = ctx.uid(), time.time()
+    groups = {}
+    with _lock:
+        for p in _posts:
+            if p.get("user") == uid and p.get("status") == "scheduled":
+                groups.setdefault(p.get("account"), []).append(p)
+    changed = []
+    for aid, rows in groups.items():
+        if len(rows) < 2:
+            continue
+        secrets.SystemRandom().shuffle(rows)
+        fixed = [p for p in _mine() if p.get("account") == aid and p.get("status") in ("posted", YOUTUBE_SCHEDULED, "posting")]
+        last = max((p.get("posted_at") or p.get("due_at", 0) for p in fixed), default=now)
+        first_creator = creators.get(rows[0].get("creator")) or creators.DEFAULTS
+        cursor = max(now, last + max(5, int(first_creator.get("post_gap_min", 10))) * 60)
+        counts = {}
+        for p in fixed:
+            stamp = p.get("posted_at") or p.get("due_at", 0)
+            counts[_day(stamp)] = counts.get(_day(stamp), 0) + 1
+        with _lock:
+            for p in rows:
+                if p.get("status") != "scheduled":
+                    continue
+                creator = creators.get(p.get("creator")) or creators.DEFAULTS
+                gap = max(5, int(creator.get("post_gap_min", 10))) * 60
+                cap = max(1, int(creator.get("daily_cap", 6)))
+                candidate = cursor
+                while counts.get(_day(candidate), 0) >= cap:
+                    lt = time.localtime(candidate + 86400)
+                    candidate = time.mktime((lt.tm_year, lt.tm_mon, lt.tm_mday, 9, 0, 0, 0, 0, -1))
+                p["due_at"] = candidate
+                counts[_day(candidate)] = counts.get(_day(candidate), 0) + 1
+                cursor = candidate + gap
+                changed.append(p)
+            _save()
+    for p in changed:
+        _mirror(p)
+    return len(changed)
+
+
 def retry(pid):
     with _lock:
         p = next((p for p in _mine() if p["id"] == pid), None)

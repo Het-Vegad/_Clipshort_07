@@ -619,6 +619,9 @@ a.lnk{color:var(--brand-ink);text-decoration:none;font-weight:600}
 dialog{border:1px solid var(--line);background:#fff;color:var(--text);border-radius:var(--r-lg);padding:0;max-width:calc(100vw - 32px)}
 dialog::backdrop{background:rgba(14,12,11,.42);animation:fadein .16s ease}
 .dlg{padding:24px;width:450px;max-width:100%;display:flex;flex-direction:column;gap:14px}
+.layout-variant-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;max-height:48vh;overflow:auto}
+.layout-variant-list label{display:flex;align-items:center;gap:8px;padding:9px 10px;border:1px solid var(--line);border-radius:9px;cursor:pointer;font-size:13px}
+.layout-variant-list input{accent-color:var(--brand-deep)}
 .dlg h2{font-size:18px;font-weight:600;color:var(--brand-ink)}
 .dlg-foot{display:flex;justify-content:flex-end;gap:8px;margin-top:4px}
 .editor{display:grid;grid-template-columns:minmax(240px,340px) minmax(300px,450px);max-height:calc(100vh - 48px)}
@@ -1795,13 +1798,14 @@ function jobHtml(j) {
   if (j.status === "live") return liveHtml(j);
   const busy = ["queued", "running", "pausing"].includes(j.status);
   const readyCount = j.clips.filter(c => c.status === "done" && !c.local_deleted).length;
+  const baseReadyCount = j.clips.filter(c => c.status === "done" && !c.local_deleted && !c.variant_of).length;
   const postAccounts = queueTargetIds(j);
   const who = !creatorId() && j.creator ? S.creators.find(c => c.id === j.creator)?.name : "";
   const meta = [who, j.uploader, j.duration ? fmt(j.duration) + " long" : "", j.clips.length ? j.clips.length + (j.clips.length === 1 ? " clip" : " clips") : "",
                 j.took ? "made in " + fmt(j.took) : "", j.kind === "live" ? "recording, " + j.stage.toLowerCase() : ""].filter(Boolean).map(esc).join(" · ");
   const pic = j.thumb ? `<img src="/media/${esc(j.id)}/thumb.jpg" alt="" loading="lazy">` : ic(j.source?.type === "file" ? "film" : "link");
   return `<div class="job-head"><div class="jt"><span class="jthumb">${pic}${j.duration ? `<span class="du">${fmt(j.duration)}</span>` : ""}</span><div style="min-width:0"><h3>${esc(j.title || j.source.name)}</h3><p class="sub">${meta}</p></div></div>
-      <div class="row" style="flex-wrap:nowrap;gap:4px">${readyCount && postAccounts.length ? `<button class="btn sm" data-act="queueready" data-j="${j.id}" title="Queue all ${readyCount} finished clips to the selected creator accounts, or YouTube if none are selected">${ic("send")}Queue ready (${readyCount})</button>` : ""}${j.status === "paused" ? `<button class="btn sm primary" data-act="resumejob" data-j="${j.id}" title="Resume from saved work">${ic("play")}Resume</button>` : j.status === "pausing" ? `<button class="btn sm" disabled title="The current step will finish before pausing">Pausing…</button>` : busy ? `<button class="btn sm" data-act="pausejob" data-j="${j.id}" title="Pause safely after the current step">${ic("pause")}Pause</button>` : `
+      <div class="row" style="flex-wrap:nowrap;gap:4px">${j.kind !== "live" && j.status === "done" && baseReadyCount ? `<button class="btn sm" data-act="layoutvariants" data-j="${j.id}" title="Make alternate layouts from the finished clip moments">${ic("film")}Layout versions</button>` : ""}${readyCount && postAccounts.length ? `<button class="btn sm" data-act="queueready" data-j="${j.id}" title="Queue all ${readyCount} finished clips to the selected creator accounts, or YouTube if none are selected">${ic("send")}Queue ready (${readyCount})</button>` : ""}${j.status === "paused" ? `<button class="btn sm primary" data-act="resumejob" data-j="${j.id}" title="Resume from saved work">${ic("play")}Resume</button>` : j.status === "pausing" ? `<button class="btn sm" disabled title="The current step will finish before pausing">Pausing…</button>` : busy ? `<button class="btn sm" data-act="pausejob" data-j="${j.id}" title="Pause safely after the current step">${ic("pause")}Pause</button>` : `
         ${j.clips.some(c => c.status === "done" && !c.local_deleted) ? `<button class="btn sm icon ghost" data-act="dlall" data-j="${j.id}" title="Download all clips of this video" aria-label="Download all clips of this video">${ic("down")}</button>` : ""}
         <button class="btn sm icon ghost" data-act="deljob" data-j="${j.id}" title="Delete" aria-label="Delete this video and its clips">${ic("trash")}</button>
         <label class="selck" title="Select this video and its clips"><input type="checkbox" data-sel="j:${j.id}" ${sel().has("j:" + j.id) ? "checked" : ""} aria-label="Select this video"></label>`}</div></div>
@@ -1856,6 +1860,25 @@ function askTyped(title, text, mustType, okLabel) {
     i.addEventListener("input", () => { $("#typedok").disabled = i.value.trim().toLowerCase() !== mustType.toLowerCase(); });
     d.onclose = () => res(d.returnValue === "yes" ? i.value.trim() : null); d.returnValue = "no"; d.showModal(); i.focus();
   });
+}
+function openLayoutVariants(j) {
+  const bases = j.clips.filter(c => c.status === "done" && !c.local_deleted && !c.variant_of);
+  const layouts = Object.entries({...LAYOUT_FALLBACK, ...(S.status.layouts || {})});
+  const dlg = $("#formdlg");
+  dlg.innerHTML = `<form method="dialog" class="dlg" style="width:560px"><h2>Make layout versions</h2><p class="help">Re-render the finished moments from this video in other layouts. It reuses the clip timestamps and transcript, and versions will not be posted automatically.</p><p class="sub">Choose layouts · up to 100 new clips per batch</p><div class="layout-variant-list">${layouts.map(([key, label]) => `<label><input type="checkbox" value="${esc(key)}" ${["stacked", "wide"].includes(key) ? "checked" : ""}>${esc(LAYOUT_SHORT[key] || label)}</label>`).join("")}</div><p class="help" id="lv_count"></p><div class="dlg-foot"><button class="btn" value="no">Cancel</button><button class="btn primary" value="yes" id="lv_make">Make versions</button></div></form>`;
+  const inputs = [...dlg.querySelectorAll(".layout-variant-list input")], count = () => {
+    const wanted = inputs.filter(x => x.checked).map(x => x.value);
+    return bases.reduce((n, base) => n + wanted.filter(layout => layout !== base.layout
+      && !j.clips.some(c => c.variant_of === base.id && c.layout === layout)).length, 0);
+  };
+  const update = () => { const n = count(); $("#lv_count").textContent = `${n} layout version${n === 1 ? "" : "s"} will be made from ${bases.length} finished clip moment${bases.length === 1 ? "" : "s"}.`; $("#lv_make").disabled = n === 0 || n > 100; };
+  inputs.forEach(x => x.addEventListener("change", update)); update();
+  dlg.onclose = async () => {
+    if (dlg.returnValue !== "yes") return;
+    try { const chosen = inputs.filter(x => x.checked).map(x => x.value); const r = await send(`/api/jobs/${encodeURIComponent(j.id)}/layout-variants`, {layouts:chosen}); await tick(); toast(`${r.queued} layout version${r.queued === 1 ? "" : "s"} added. They will not be auto-posted.`, "ok"); }
+    catch (err) { toast(err.message, "bad"); }
+  };
+  dlg.returnValue = "no"; dlg.showModal();
 }
 function drawJobs() {
   const root = $("#jobs"); if (!root) return;
@@ -2040,7 +2063,7 @@ function drawOverview() {
       ${o.creators.map(r => `<tr><td><a class="lnk" href="#" data-act="go" data-v="c:${esc(r.id)}">${esc(r.name)}</a></td><td>${r.autopost ? `<span class="pill ok">On</span>` : `<span class="pill">Off</span>`}</td><td class="num">${r.clips_today} <span class="sub">/ ${r.clips_total}</span></td><td class="num">${r.posted_today} <span class="sub">/ ${r.posted_total}</span></td><td class="num">${r.queued}</td><td class="num">${r.failed}</td><td class="num">${r.views.toLocaleString()}</td><td class="num">${r.earnings.toFixed(2)}</td></tr>`).join("")}</table></div>`
       : `<div class="empty"><img src="/brand/favicon.svg?v=clipshorts2" alt=""><b>No creators yet</b>Add one to give each streamer their own workspace.</div>`}</div>
     <div class="card post-queue-card"><div class="card-head"><div><h2>Post queue</h2><p class="sub">${o.paused ? "Posting is paused. Queued clips will wait until posting resumes." : "ClipShorts uploads and publishes clips at their 10-minute queue times. Keep the app running while clips are posting."}</p></div>
-        <div class="row"><button class="btn primary" data-act="prereschedule" ${localPending ? "" : "disabled"} title="Assign fresh 10-minute slots to clips still waiting locally.">${ic("clock")}Reschedule queue</button><button class="btn ${o.paused ? "primary" : ""}" data-act="pause">${ic(o.paused ? "play" : "pause")}${o.paused ? "Resume posting" : "Pause all posting"}</button></div></div>
+        <div class="row"><button class="btn" data-act="postshuffle" ${localPending > 1 ? "" : "disabled"} title="Randomize the order of clips waiting to publish; posted clips are unchanged.">Shuffle order</button><button class="btn primary" data-act="prereschedule" ${localPending ? "" : "disabled"} title="Assign fresh 10-minute slots to clips still waiting locally.">${ic("clock")}Reschedule queue</button><button class="btn ${o.paused ? "primary" : ""}" data-act="pause">${ic(o.paused ? "play" : "pause")}${o.paused ? "Resume posting" : "Pause all posting"}</button></div></div>
       <p class="help">Queued clips need ClipShorts running at their queue time. YouTube views refresh about every five minutes; a new Short may show zero views while it gets its first viewers. Hashtags stay specific to the creator, game, and moment.</p>
       ${o.posts.length ? `<div class="scroll"><table class="post-queue-table"><tr><th>When</th><th>Clip</th><th>Creator</th><th>Account</th><th class="num">Views</th><th>Publish status</th></tr>
       ${o.posts.map(p => `<tr><td data-l="When">${pst(p)}</td><td data-l="Clip" class="c-main">${p.url ? `<a class="lnk" href="${esc(p.url)}" target="_blank" rel="noopener">${esc(p.title)}</a>` : esc(p.title)}${p.error ? `<div class="err" style="margin:2px 0 0">${esc(p.error)}</div>` : ""}</td><td data-l="Creator">${esc(p.creator_name || "None")}</td><td data-l="Account">${esc(p.account_name)}</td><td data-l="Views" class="num">${p.views ?? "–"}</td>
@@ -2388,6 +2411,7 @@ document.addEventListener("click", async e => {
       await tick();
       return toast(result.queued ? `${result.queued} clip${result.queued === 1 ? "" : "s"} added to the post queue` : "These clips are already in the post queue.", "ok");
     }
+    if (a === "layoutvariants") { const j = jobOf(d.j); if (j) openLayoutVariants(j); return; }
     if (a === "pausejob") {
       await api(`/api/jobs/${d.j}/pause`, {method:"POST"});
       toast("Pause requested. The current download, transcript block, AI review, or clip render will finish safely first.", "ok");
@@ -2592,6 +2616,14 @@ document.addEventListener("click", async e => {
       const result = await api("/api/posts/reschedule", {method:"POST"});
       toast(result.rescheduled ? `Updated ${result.rescheduled} waiting clip${result.rescheduled === 1 ? "" : "s"}.` : "No local clips are waiting to reschedule.", result.rescheduled ? "ok" : "");
       return loadOverview();
+    }
+    if (a === "postshuffle") {
+      const n = Number(S.overview?.local_pending || 0);
+      if (n < 2) return toast("Add at least two locally queued clips before shuffling.");
+      if (!await ask("Shuffle the post queue?", `Randomize the order of ${n} queued clips and assign fresh spaced times. Already posted, paused, or scheduled directly on YouTube clips will not change.`, "Shuffle queue")) return;
+      const result = await send("/api/posts/shuffle", {});
+      await loadOverview();
+      return toast(result.shuffled ? `Shuffled ${result.shuffled} queued clips.` : "There were not enough waiting clips to shuffle.", result.shuffled ? "ok" : "");
     }
     if (a === "post-next" || a === "post-prev") {
       const pages = Math.max(1, Math.ceil((S.overview?.posts_total || 0) / (S.overview?.posts_per_page || 20)));

@@ -1590,9 +1590,25 @@ def queue_ready_clips(jid: str, body: dict = Body(...)):
     return {"queued": queued, "ready": len(clips)}
 
 
+@app.post("/api/jobs/{jid}/layout-variants")
+def create_layout_variants(jid: str, body: dict = Body(...)):
+    job = _job_or_404(jid)
+    _throttle("layout-variants:" + ctx.uid(), 10, 600)
+    try:
+        made = jobs.create_layout_variants(jid, body.get("layouts", []))
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    return {"queued": made}
+
+
 @app.post("/api/posts/reschedule")
 def reschedule_posts():
     return {"rescheduled": posting.reschedule_all()}
+
+
+@app.post("/api/posts/shuffle")
+def shuffle_posts():
+    return {"shuffled": posting.shuffle_pending()}
 
 
 @app.post("/api/posts/{pid}/{action}")

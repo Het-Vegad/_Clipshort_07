@@ -1,5 +1,6 @@
 """Job pipeline: get video -> audio -> transcript -> AI picks -> rendered clips. One heavy task at a time."""
 import collections
+import copy
 import json
 import os
 import math
@@ -562,6 +563,54 @@ def request_render(jid, cid, changes: dict):
     _q.put(("clip", jid, cid))
 
 
+def create_layout_variants(jid, layouts):
+    """Queue alternate renders of the finished moments in a video, without repeating analysis."""
+    job = get(jid)
+    if not job or job.get("kind") == "live" or job.get("status") != "done":
+        raise ValueError("Layout versions are available after a video has finished clipping.")
+    if not isinstance(layouts, list):
+        raise ValueError("Choose at least one layout.")
+    wanted = list(dict.fromkeys(str(x) for x in layouts if str(x) in render.LAYOUTS))
+    if not wanted:
+        raise ValueError("Choose at least one valid layout.")
+    bases = [c for c in job.get("clips", []) if c.get("status") == "done" and not c.get("local_deleted") and not c.get("variant_of")]
+    existing = {(c.get("variant_of"), c.get("layout")) for c in job.get("clips", []) if c.get("variant_of")}
+    pairs = [(base, layout) for base in bases for layout in wanted
+             if layout != base.get("layout") and (base["id"], layout) not in existing]
+    if not pairs:
+        raise ValueError("There are no new layout versions to make for this video.")
+    if len(pairs) > 100:
+        raise ValueError("This would create more than 100 clips at once. Choose fewer layouts and run the button again for another batch.")
+    face_box = job.get("facecam")
+    if not face_box and any(layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") for _, layout in pairs):
+        candidate_source = job.get("source_path") or next((c.get("src") for c in bases if c.get("src") and Path(c["src"]).is_file()), None)
+        if candidate_source:
+            try:
+                found = facecam.detect(candidate_source)
+                if found and found.get("conf") == "high":
+                    face_box = [found["x"], found["y"], found["w"], found["h"]]
+                    job["facecam"] = face_box
+            except Exception:  # noqa: BLE001 - a facecam search failure should not block other layouts
+                pass
+    made = []
+    for base, layout in pairs:
+        variant = copy.deepcopy(base)
+        variant.update(id="variant_" + uuid.uuid4().hex[:14], status="queued", version=0, layout=layout,
+                       variant_of=base["id"], no_autopost=True)
+        if face_box and layout in ("gameplay", "reaction", "stacked", "split", "bottomcam"):
+            variant["facecam"] = face_box
+        for key in ("file", "cover", "error", "made_at", "local_deleted", "posts"):
+            variant.pop(key, None)
+        job["clips"].append(variant)
+        made.append(variant)
+    save(job)
+    for variant in made:
+        _q.put(("clip", jid, variant["id"]))
+    if job.get("creator"):
+        creators.log(job["creator"], f"Making {len(made)} layout version{'s' if len(made) != 1 else ''} from finished moments.")
+    return len(made)
+
+
 def update_clip_metadata(jid, cid, changes: dict):
     """Save post copy and category without re-encoding the video."""
     job = _jobs[jid]
@@ -612,13 +661,14 @@ def render_one(job, clip, words):
         (d / "clips" / f"{clip['id']}.json").write_text(json.dumps(post, indent=1), encoding="utf-8")
         if clip["version"] == 1:
             clip.setdefault("made_at", time.time())
-            creators.log(job["creator"], f"Clip ready (score {clip['score']}): {clip['title'] or clip['hook']}")
-            save(job)
-            for fn in on_clip_ready:
-                try:
-                    fn(job, clip)
-                except Exception:  # noqa: BLE001
-                    traceback.print_exc()
+            if not clip.get("no_autopost"):
+                creators.log(job["creator"], f"Clip ready (score {clip['score']}): {clip['title'] or clip['hook']}")
+                save(job)
+                for fn in on_clip_ready:
+                    try:
+                        fn(job, clip)
+                    except Exception:  # noqa: BLE001
+                        traceback.print_exc()
     except Exception as e:  # noqa: BLE001
         clip.update(status="error", error=safe.friendly(e, 400))
         creators.log(job["creator"], f"Clip failed: {safe.friendly(e, 200)}")
