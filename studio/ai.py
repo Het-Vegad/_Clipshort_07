@@ -48,6 +48,55 @@ _rate_events = collections.deque()  # [monotonic time, reserved tokens], shared 
 _key_override = contextvars.ContextVar("peakcut_ai_key", default=None)
 _key_state_lock = threading.Lock()
 _key_state = {}  # key-pool hash -> index that most recently succeeded
+_key_cooldowns = {}  # provider + key fingerprint -> epoch when the key may be tried again
+_key_cooldowns_loaded = False
+
+
+def _key_fingerprint(provider_id, secret):
+    return hashlib.sha256((str(provider_id) + "\0" + str(secret)).encode("utf-8")).hexdigest()
+
+
+def _load_key_cooldowns():
+    """Load reset times without ever writing API keys to disk."""
+    global _key_cooldowns_loaded
+    with _key_state_lock:
+        if _key_cooldowns_loaded:
+            return
+        _key_cooldowns_loaded = True
+        try:
+            data = json.loads((config.DATA_DIR / "ai-key-cooldowns.json").read_text(encoding="utf-8"))
+            if isinstance(data, dict):
+                _key_cooldowns.update({str(k): float(v) for k, v in data.items()
+                                       if isinstance(v, (int, float)) and float(v) > time.time() - 86400})
+        except (OSError, ValueError, TypeError):
+            pass
+
+
+def _save_key_cooldowns():
+    path = config.DATA_DIR / "ai-key-cooldowns.json"
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_suffix(".tmp")
+    # Keep only recent entries, including expired ones briefly, so a post-reset probe checks one key
+    # at a time instead of hammering the whole pool again.
+    now = time.time()
+    data = {k: v for k, v in _key_cooldowns.items() if v > now - 86400}
+    tmp.write_text(json.dumps(data), encoding="utf-8")
+    try:
+        os.chmod(tmp, 0o600)
+    except OSError:
+        pass
+    tmp.replace(path)
+
+
+def _key_wait_seconds(e):
+    """Use the provider's reset header when available; otherwise pause a limited key for an hour."""
+    wait = retry_delay(e)
+    if wait is not None and wait > 0:
+        return min(7 * 86400, max(30, wait))
+    text = str(e).lower()
+    if any(term in text for term in ("daily", "per day", "quota", "billing", "credit", "exhausted")):
+        return 3600
+    return 300
 
 
 def token_budget():
@@ -189,32 +238,67 @@ def redact(text) -> str:
 
 def _rotatable(e) -> bool:
     status = getattr(e, "status_code", None)
-    return status in (401, 403, 408, 429, 500, 502, 503, 504) or any(
-        f"HTTP {code}" in str(e) for code in (401, 403, 408, 429, 500, 502, 503, 504))
+    # Switching credentials cannot fix provider outages or network failures. Rotate only when
+    # the response says this particular credential is invalid or rate limited.
+    return status in (401, 403, 429) or any(f"HTTP {code}" in str(e) for code in (401, 403, 429))
 
 
 def _with_key_rotation(fn):
-    pool = current()["keys"] or [""]
-    if len(pool) == 1:
-        return fn()
+    settings = current()
+    pool = settings["keys"] or [""]
+    provider_id = settings["provider"]
+    _load_key_cooldowns()
+    fingerprints = [_key_fingerprint(provider_id, value) for value in pool]
     pool_id = hashlib.sha256("\0".join(pool).encode("utf-8")).hexdigest()
+    now = time.time()
     with _key_state_lock:
         start = _key_state.get(pool_id, 0) % len(pool)
+        cooldowns = dict(_key_cooldowns)
+    # Brand-new keys can be tried immediately. Once a pool has hit its limit, retry just one
+    # expired key per request; if it is still limited, move to the next key on the next request.
+    fresh = [i for i, fp in enumerate(fingerprints) if fp not in cooldowns]
+    eligible = fresh + [i for i, fp in enumerate(fingerprints) if fp in cooldowns and cooldowns[fp] <= now]
+    post_reset_probe = not fresh and bool(eligible)
+    if not eligible:
+        wait = max(1, int(min(cooldowns[fp] for fp in fingerprints) - now))
+        raise AIError(f"All saved {PROVIDERS.get(provider_id, ('AI',))[0]} keys are cooling down after rate limits. "
+                      f"ClipShorts will retry a key in about {wait} seconds.",
+                      status_code=429, retry_after=wait)
+    ordered = sorted(eligible, key=lambda i: (i - start) % len(pool))
+    if post_reset_probe:
+        ordered = ordered[:1]
     last = None
-    for offset in range(len(pool)):
-        index = (start + offset) % len(pool)
+    changed = False
+    for index in ordered:
+        fp = fingerprints[index]
         token = _key_override.set(pool[index])
         try:
             result = fn()
             with _key_state_lock:
                 _key_state[pool_id] = index
+                changed = _key_cooldowns.pop(fp, None) is not None
+                if changed:
+                    _save_key_cooldowns()
             return result
         except Exception as e:  # noqa: BLE001
             last = e
-            if not _rotatable(e) or offset == len(pool) - 1:
+            if not _rotatable(e):
+                if changed:
+                    with _key_state_lock:
+                        _save_key_cooldowns()
                 raise
+            wait = 86400 if getattr(e, "status_code", None) in (401, 403) else _key_wait_seconds(e)
+            with _key_state_lock:
+                _key_cooldowns[fp] = time.time() + wait
+                _key_state[pool_id] = (index + 1) % len(pool)
+                changed = True
+            if post_reset_probe:
+                break
         finally:
             _key_override.reset(token)
+    if changed:
+        with _key_state_lock:
+            _save_key_cooldowns()
     raise last
 
 
@@ -375,6 +459,8 @@ def explain(e) -> str:
     """What went wrong with an AI call, in words the owner can act on."""
     text, low = str(e), str(e).lower()
     name = (models() or ["?"])[0]
+    if "all saved" in low and "cooling down" in low:
+        return text
     if "above the configured groq per-minute budget" in low:
         return ("This transcript section was too large for the Groq request budget. ClipShorts now analyzes shorter sections; "
                 "retry AI selection from the saved transcript.")
