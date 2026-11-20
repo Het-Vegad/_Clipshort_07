@@ -326,7 +326,7 @@ def _seen(path: str | Path, box, w: int, h: int, still: np.ndarray, light: np.nd
     return _finish(path, found, w, h, still)
 
 
-def detect(path: str | Path, ask=None) -> dict | None:
+def detect(path: str | Path, ask=None, require_visual: bool = False) -> dict | None:
     """The facecam's box in the source, in source pixels, or None.
 
     The box is given as x, y, width, height, with the confidence in "score" and
@@ -347,6 +347,8 @@ def detect(path: str | Path, ask=None) -> dict | None:
     looked, hinted = (False, None)
     if ask is not None:
         looked, hinted = _asked(path, ask)
+        if require_visual and not looked:
+            return None                    # do not turn a static HUD/scene prop into a facecam when visual AI failed
         if looked and not hinted:
             return None                    # it looked, and there is no webcam on this stream
     vx, hy = _profiles(frames)

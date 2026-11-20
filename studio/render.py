@@ -297,6 +297,8 @@ def _filter(layout, fg_h, facecam=None):
 def _hook_y(layout, hook_y, facecam=None):
     """Where the heading goes. In the gameplay layout the webcam sits in the top corner, so a heading
     across the top would run under it: it goes just below the picture instead."""
+    if layout == "stacked":
+        return int(H * 0.36) + 105  # place the hook below the facecam panel, over gameplay
     if layout in ("gameplay", "reaction", "bottomcam") and facecam and len(facecam) == 4 and facecam[2] > 8:
         pip_w = REACTION_PIP_W if layout == "reaction" else PIP_W
         return PIP_MARGIN + int(round(pip_w * facecam[3] / facecam[2])) + 32

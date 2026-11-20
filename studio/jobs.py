@@ -172,7 +172,7 @@ def job_dir(jid) -> Path:
     return Path(_jobs[jid]["dir"])
 
 
-HIDDEN = ("dir", "user", "source_path", "recover")
+HIDDEN = ("dir", "user", "source_path", "recover", "_facecam_checked")
 
 
 def public(job) -> dict:
@@ -586,7 +586,8 @@ def create_layout_variants(jid, layouts):
         candidate_source = job.get("source_path") or next((c.get("src") for c in bases if c.get("src") and Path(c["src"]).is_file()), None)
         if candidate_source:
             try:
-                found = facecam.detect(candidate_source)
+                found = facecam.detect(candidate_source, ask=brain.look_for_facecam,
+                                       require_visual=any(layout == "stacked" for _, layout in pairs))
                 if found and found.get("conf") == "high":
                     face_box = [found["x"], found["y"], found["w"], found["h"]]
                     job["facecam"] = face_box
@@ -651,6 +652,10 @@ def render_one(job, clip, words):
             _piece_again(job, clip)
         off = clip.get("src_offset", 0.0)
         src = Path(clip["src"]) if clip.get("src") else Path(job["source_path"])
+        if clip.get("layout") in ("gameplay", "reaction", "stacked", "split", "bottomcam") and not clip.get("facecam"):
+            box = _facecam(job, src, require_visual=clip.get("layout") == "stacked")
+            if box:
+                clip["facecam"] = box
         if not clip.get("src"):
             clip["end"] = min(clip["end"], job["duration"])
         local = dict(clip, start=clip["start"] - off, end=clip["end"] - off, hook=roman.to_roman(clip.get("hook") or ""))
@@ -796,18 +801,23 @@ def _covers(words: list, start: float, end: float) -> bool:
     return len(inside) >= 25 * minutes and inside[-1]["s"] >= start + 0.85 * (end - start)
 
 
-def _facecam(job) -> list | None:
+def _facecam(job, source_path=None, require_visual=False) -> list | None:
     """Where the webcam is in the source: once for the whole video, for every clip of it.
 
     Only a sure answer is used. A box that is a scoreboard drawn over the game would
     put a picture of a scoreboard in the corner of the clip. One frame is also shown to
     the AI, which tells a person from a game character better than any measurement can;
     what it says is measured again on the picture, so it cannot do any harm."""
-    path = job.get("source_path")
+    if job.get("facecam"):
+        return job["facecam"]
+    if job.get("_facecam_checked"):
+        return None
+    path = job.get("source_path") or source_path
     if not path or not Path(path).is_file():
         return None
+    job["_facecam_checked"] = True
     try:
-        box = facecam.detect(path, ask=brain.look_for_facecam)
+        box = facecam.detect(path, ask=brain.look_for_facecam, require_visual=require_visual)
     except Exception:  # noqa: BLE001 - a missing facecam is not a failure
         return None
     if not box or box.get("conf") != "high":
@@ -1102,7 +1112,7 @@ def _run_job(job):
             # Only the gameplay layout uses a webcam, so it is only looked for then, and only once: a
             # stream with no webcam is not looked for again on every clip of it.
             if o["layout"] in ("gameplay", "reaction", "stacked", "split", "bottomcam") and face is False:
-                face = _facecam(job)
+                face = _facecam(job, require_visual=o["layout"] == "stacked")
             if face:
                 c["facecam"] = face
             job["clips"].append(c)
