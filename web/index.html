@@ -1783,6 +1783,11 @@ function liveHtml(j) {
 function jobPercent(j) {
   const saved = Number(j.progress || 0), stage = String(j.stage || "");
   const match = stage.match(/^AI reviewing\s+(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?) min of (\d+(?:\.\d+)?) min$/);
+  if (match) { const through = Number(match[2]), total = Math.max(1, Number(match[3])); return Math.max(0.92, Math.min(0.99, 0.92 + 0.07 * through / total)); }
+  if (stage === "Finishing the clips" && j.clips?.length) {
+    const finished = j.clips.filter(c => ["done", "error"].includes(c.status)).length;
+    return 0.99 + 0.01 * finished / j.clips.length;
+  }
   if (!match || saved >= 0.9) return saved;
   const through = Number(match[2]), total = Math.max(1, Number(match[3]));
   return Math.max(saved, Math.min(0.8, 0.25 + 0.55 * through / total));
@@ -1809,7 +1814,7 @@ function jobHtml(j) {
         ${j.clips.some(c => c.status === "done" && !c.local_deleted) ? `<button class="btn sm icon ghost" data-act="dlall" data-j="${j.id}" title="Download all clips of this video" aria-label="Download all clips of this video">${ic("down")}</button>` : ""}
         <button class="btn sm icon ghost" data-act="deljob" data-j="${j.id}" title="Delete" aria-label="Delete this video and its clips">${ic("trash")}</button>
         <label class="selck" title="Select this video and its clips"><input type="checkbox" data-sel="j:${j.id}" ${sel().has("j:" + j.id) ? "checked" : ""} aria-label="Select this video"></label>`}</div></div>
-    ${busy ? `<div class="bar"><i style="width:${Math.round(jobPercent(j) * 100)}%"></i></div><p class="sub">${esc(j.stage)} · ${Math.round(jobPercent(j) * 100)}%</p>` : j.status === "paused" ? `<p class="sub">${esc(j.stage)} · saved progress ${Math.round(j.progress * 100)}%</p>` : ""}
+    ${busy ? `<div class="bar"><i style="width:${(jobPercent(j) * 100).toFixed(1)}%"></i></div><p class="sub">${esc(j.stage)} · ${(jobPercent(j) * 100).toFixed(1)}%</p>` : j.status === "paused" ? `<p class="sub">${esc(j.stage)} · saved progress ${Math.round(j.progress * 100)}%</p>` : ""}
     ${j.status === "done" && !j.clips.length ? `<p class="sub">${esc(j.stage)}</p>` : ""}
     ${j.error ? `<div class="err">${esc(j.error)}<button class="rep" data-act="report" data-ctx="${esc("Video failed: " + (j.title || j.source.name || "") + " | " + j.error)}">Copy fix</button></div>` : ""}${j.ai?.note ? `<p class="sub">${esc(j.ai.note)}</p>` : ""}${j.ai?.visual_review ? `<p class="sub">${esc(j.ai.visual_review)}</p>` : ""}
     ${["done", "error"].includes(j.status) && j.kind === "video" && !j.clips.length && j.ai?.note ? `<button class="btn sm primary" data-act="retry-ai" data-j="${j.id}" title="Uses the saved transcript; it does not download or transcribe the full video again.">${ic("bolt")}Retry AI selection only</button>` : ""}
