@@ -133,7 +133,7 @@ _by_user: dict = {}                       # user -> {job id: job}: listing one p
 _lock = threading.RLock()
 on_clip_ready: list = []   # callbacks (job, clip), run once when a clip first finishes
 
-DEFAULTS = {"max_clips": 50, "min_len": 15, "max_len": 60, "min_score": 80, "style": "bounce", "layout": "blur", "quality": 720,
+DEFAULTS = {"max_clips": 50, "min_len": 15, "max_len": 60, "min_score": 80, "style": "bounce", "layout": "stacked", "quality": 720,
             "range_start": None, "range_end": None, "captions": True}
 
 
@@ -583,13 +583,26 @@ def create_layout_variants(jid, layouts):
         raise ValueError("This would create more than 100 clips at once. Choose fewer layouts and run the button again for another batch.")
     face_box = job.get("facecam")
     if not face_box and any(layout in ("gameplay", "reaction", "stacked", "split", "bottomcam") for _, layout in pairs):
-        candidate_source = job.get("source_path") or next((c.get("src") for c in bases if c.get("src") and Path(c["src"]).is_file()), None)
-        if candidate_source:
+        job["_facecam_attempts"] = 0  # a user-requested layout pass may inspect a new set of source pieces
+        candidates, seen = [], set()
+        for source in ([job.get("source_path")] if job.get("source_path") else []) + [c.get("src") for c in bases]:
+            if not source or not Path(source).is_file():
+                continue
+            resolved = str(Path(source).resolve())
+            if resolved in seen:
+                continue
+            seen.add(resolved)
+            candidates.append(source)
+            if len(candidates) == 3:
+                break
+        for candidate_source in candidates:
             try:
                 face_box = _facecam(job, candidate_source,
                                     require_visual=any(layout in ("stacked", "bottomcam") for _, layout in pairs))
             except Exception:  # noqa: BLE001 - a facecam search failure should not block other layouts
-                pass
+                face_box = None
+            if face_box:
+                break
     if not face_box and any(layout in ("stacked", "bottomcam") for _, layout in pairs):
         raise ValueError("ClipShorts could not confirm a facecam in this video, so it did not queue these layouts. Check that the source has a visible facecam and that AI Settings has a working vision model, then try again.")
     made = []
@@ -827,19 +840,41 @@ def _facecam(job, source_path=None, require_visual=False) -> list | None:
                     return box
     except (TypeError, ValueError, OSError):
         pass
-    if job.get("_facecam_checked"):
-        return None
     path = job.get("source_path") or source_path
     if not path or not Path(path).is_file():
         return None
+    if int(job.get("_facecam_attempts", 0) or 0) >= 3:
+        return None
+    job["_facecam_attempts"] = int(job.get("_facecam_attempts", 0) or 0) + 1
     job["_facecam_checked"] = True
     try:
-        box = facecam.detect(path, ask=brain.look_for_facecam, require_visual=require_visual)
+        # First look locally so a new creator normally costs no vision API call. If the local
+        # border/motion scan cannot confirm a camera, ask vision once as a fallback.
+        box = facecam.detect(path)
+        if box and require_visual:
+            width, height = int(job.get("width") or 0), int(job.get("height") or 0)
+            if width <= 0 or height <= 0:
+                width, height = facecam._size(path)
+            if width > 0 and height > 0 and (box["w"] > width * 0.40 or box["h"] > height * 0.40 or box.get("corner") == "middle"):
+                box = None  # a large/central still panel is ambiguous; let vision confirm it
+        if not box and require_visual and not job.get("_facecam_vision_attempted"):
+            job["_facecam_vision_attempted"] = True
+            box = facecam.detect(path, ask=brain.look_for_facecam, require_visual=True)
     except Exception:  # noqa: BLE001 - a missing facecam is not a failure
         return None
     if not box or box.get("conf") != "high":
         return None
     job["facecam"] = [box["x"], box["y"], box["w"], box["h"]]
+    if job.get("creator"):
+        try:
+            width, height = int(job.get("width") or 0), int(job.get("height") or 0)
+            if width <= 0 or height <= 0:
+                width, height = facecam._size(path)
+            if width > 0 and height > 0:
+                creators.update(job["creator"], {"layout": "stacked", "facecam": [
+                    box["x"] / width, box["y"] / height, box["w"] / width, box["h"] / height]})
+        except (KeyError, TypeError, ValueError, OSError):
+            pass  # a profile write must never stop the clip being made
     return job["facecam"]
 
 

@@ -34,7 +34,7 @@ import numpy as np
 W, H = 320, 180            # the picture is looked at small: only the lines matter
 MAX_FRAMES = 24            # frames spread through the video
 MIN_SIZE = 0.12            # the smallest a webcam may be, as a part of the width or height
-MAX_SIZE = 0.60            # and the largest
+MAX_SIZE = 0.50            # and the largest: giant static game panels are not webcam pictures
 ASPECT_MIN = 0.55          # the narrowest: a phone held upright is about 0.56
 ASPECT_MAX = 3.20          # the widest: a banner or a ticker is wider than this
 STILL_FRAC = 0.35          # how much of the game's own movement a webcam picture may have

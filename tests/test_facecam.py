@@ -77,6 +77,15 @@ try:
         check("a creator's saved facecam position is reused on new uploads",
               jobs._facecam(profiled_job), [1517, 119, 384, 238])
 
+        auto_profile = creators.create({"name": "Automatic facecam profile test"})
+        auto_job = {"creator": auto_profile["id"], "source_path": cam, "width": 1280, "height": 720}
+        auto_box = jobs._facecam(auto_job)
+        saved = creators.get(auto_profile["id"])
+        expected_profile = [v / dim for v, dim in zip(auto_box, (1280, 720, 1280, 720))] if auto_box else None
+        check("a first local camera detection is saved for later streams",
+              saved.get("facecam") == expected_profile, True)
+        check("creator streams default to facecam above", saved.get("layout"), "stacked")
+
     # ---- a webcam that is square and runs along one edge, not into a corner
     sq = make("cam_sq.mp4", "color=c=0xC08050:size=360x355:rate=25", where="920:165")
     box = facecam.detect(sq)
