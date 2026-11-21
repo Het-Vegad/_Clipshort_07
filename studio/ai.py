@@ -245,7 +245,7 @@ def _rotatable(e) -> bool:
 
 def _with_key_rotation(fn):
     settings = current()
-    pool = settings["keys"] or [""]
+    pool = settings.get("keys") or ([settings.get("key")] if settings.get("key") else [""])
     provider_id = settings["provider"]
     _load_key_cooldowns()
     fingerprints = [_key_fingerprint(provider_id, value) for value in pool]
