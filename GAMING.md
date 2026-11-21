@@ -1,160 +1,72 @@
-# Gaming mode
+# Gaming streams and facecam layouts
 
-PeakCut was built for talk: it reads a transcript and picks moments from it. A
-gaming stream is mostly not talk — it is a game, a facecam, and a streamer
-reacting. Three changes make it work on those streams.
+ClipShorts is configured for creator streams where gameplay and a webcam appear together. The default layout for
+creator workspaces and new clip jobs is **Facecam above gameplay** (`stacked`). Other layouts remain available in
+the Add Clips options and for finished-clip layout versions.
 
-## 1. It knows which game it is
+## Automatic webcam detection and creator profiles
 
-`studio/games.py` reads the game from the stream's title, the video's title, the
-channel name, or the game the creator set. Twenty-three games are known by name,
-including GTA VI, GTA V, Fortnite, Minecraft, Valorant, Elden Ring, Palworld,
-Helldivers 2, Cyberpunk 2077, Marvel Rivals, The Finals, Rocket League and more.
+Webcam position and size vary by creator and can change between recording setups. ClipShorts handles new creators
+automatically:
 
-When the game is known, two things change.
+1. It checks the source locally for a persistent webcam frame and movement consistent with a camera.
+2. If local detection cannot confirm a webcam and the requested layout needs one, it may send one sampled frame to
+   the configured vision model for help. This is a fallback; it is not a visual review of the whole video.
+3. When a camera is confirmed, its normalized position is saved to that creator's profile and reused on later videos.
+   The saved position is scaled to the source dimensions.
 
-**The AI is told what it is looking at** (`GAME_RULES` in `studio/brain.py`):
+The creator profile belongs to the local ClipShorts workspace. A new creator needs a suitable source with a visible
+webcam for its first calibration. A stream with no visible webcam cannot produce a true facecam layout; for
+Facecam above or Facecam below, ClipShorts reports that it could not confirm the camera instead of silently marking
+a centre crop as the requested layout. If the creator changes their recording layout, the saved profile may need to
+be refreshed by removing or correcting that profile before retrying.
 
-```
-This stream is Grand Theft Auto VI. Pick the moments that only mean something with that
-game in mind:
-- A play, a death, a jump scare, a glitch, a discovery, or the streamer reacting to one.
-- The hook is what was said at that moment, or, if nothing was said, the name of what
-  happened in two or three words ("1 VS 3", "THE SHOT", "HE GOT ME", "CLUTCH"). Never a
-  sentence that needs the game explained.
-- The title names the game when the clip is about it.
-- The hashtags include GTA6, GTA6Game, ViceCity, RockstarGames, GTA6Launch.
-```
+For privacy, the sampled frame is sent only when a vision fallback is needed and a vision-capable AI service is
+configured. Without that fallback, the local detector can still find a camera. Transcript prompts and images sent
+for detection go to the AI provider configured in **Settings, AI**.
 
-**Every post carries the game's tags** (`_tidy` in `studio/brain.py`), whatever
-the AI wrote for itself: `#GTA6`, `#GTA6Game`, `#ViceCity`, `#RockstarGames`,
-`#GTA6Launch` for GTA VI; `#GTA5`, `#GTAOnline`, `#GTA5RP` for GTA V. People
-search for the game, not for "gaming".
+## Available layouts
 
-The game is a hint for the copy, never a filter. A stream whose title says GTA 6
-but which is really a chat stream still gets clips; they just carry GTA tags.
-
-Where it is read from, in order:
-
-| Where | What it looks at |
+| Layout | Result |
 |---|---|
-| the creator's Setup | the `game` field, if it is set |
-| a live stream | the stream's own title — on launch night it says the game |
-| a video | the video's title and the file's name |
+| **Facecam above gameplay** (`stacked`) | Webcam occupies the upper panel; gameplay fills the lower panel. The large hook text is omitted, and captions sit between panels. |
+| **Facecam below gameplay** (`bottomcam`) | Gameplay fills the upper panel; webcam is in the lower panel. The large hook text is omitted, and captions sit in the gameplay area above the webcam. |
+| **Gameplay + facecam** (`gameplay`) | Gameplay fills the vertical frame, with the webcam overlaid in a corner. |
+| **Reaction focus** (`reaction`) | Larger webcam overlay with gameplay still visible. |
+| **Side-by-side** (`split`) | Gameplay and webcam occupy separate side-by-side panels. |
+| **Wide gameplay** (`wide`) | Wide source frame over a blurred background. |
+| **Action zoom** (`action`) | Tighter full-screen gameplay crop. |
+| **Blurred fill** (`blur`) | Full source frame with a blurred background filling the vertical canvas. |
+| **Zoomed fill** (`zoom`) | Enlarged source with blurred fill. |
+| **Fill screen** (`crop`) | Centre crop to fill the vertical canvas. |
 
-The creator's own setting wins, so a GTA VI streamer can be pinned to GTA VI
-even when a stream's title says nothing.
+Caption generation is a separate option from layout selection. Users can leave **Generate captions** unchecked. Layout
+versions reuse the already-selected clip timestamps and do not auto-post; queue the version you choose.
 
-## 2. The crowd is counted as people
+## Clip selection and its limits
 
-Twitch lets one person send fifty messages in a second. A wave of the same
-emote is not a crowd getting excited, but it looked exactly like one to a
-counter.
+ClipShorts analyzes transcripts and audio signals such as loudness, and can use AI to rank moments and produce titles,
+hooks, descriptions, and hashtags. Gaming title and creator cues help keep metadata relevant. It does not visually
+inspect every frame to understand gameplay, verify every kill or punchline, or predict views. A facecam scan is for
+locating the camera only, not judging whether a moment is entertaining.
 
-The chat reader now keeps the names as well as the count
-(`studio/live.py`, `_chat`), and the two places that ask "did the chat react?"
-use people instead of messages:
+If the AI provider is rate-limited or has exhausted its quota, the AI may be temporarily unavailable. The app rotates
+configured keys and observes per-key cooldowns, but keys sharing an account or organization share that provider's
+quota. No number of keys can raise a shared daily limit. Clip selection may continue with audio-based signals while
+AI-assisted selection and metadata are unavailable.
 
-- the spike watcher (`_chat_spike`): a message jump now has to be backed by more
-  different people than usual, or it is not a spike;
-- the reaction judge (`judge_signals`): it is shown how many *people* were
-  talking in each slice, so a bot storm does not look like a crowd.
+Creator and game tags are selected to describe the channel and clip topic; they do not guarantee reach or virality.
+Review clips and metadata before posting, especially when the source language or game context is unclear.
 
-If the names cannot be read, the old behaviour is kept — messages are counted
-as messages.
+## Relevant code
 
-## 3. The facecam is found, and the game fills the screen
-
-A gaming stream is a 16:9 game with a small webcam picture in one corner. PeakCut's
-"blur" layout puts the whole 16:9 frame into a band with blurred fill above and
-below — fine for a talking head, poor for a game, where the play is a thin strip
-of the picture.
-
-The new **gameplay** layout fills the 1080x1920 frame with the game (centre
-cropped, the same as "Fill screen") and puts the webcam in the top corner of it,
-so the viewer sees the play and the face at once.
-
-To do that, PeakCut has to know where the webcam is. `studio/facecam.py` finds it
-by the one thing a webcam always has and a game almost never has: **a straight
-border that stays in the same place in every frame**. A wall in the game moves, a
-HUD bar changes, the edge of the webcam box does not move at all.
-
-- frames spread through the video are looked at small (320x180)
-- for every column and every row, how much the picture changes at that line is
-  counted, and the median over the frames is taken, so one busy moment cannot
-  invent a line
-- the lines that stand out are the borders. Any rectangle they and the frame's own
-  edges can make is a candidate: a webcam may sit in a corner, along one edge, or
-  even with a margin all round. Square and upright pictures count too, because a
-  vertical webcam is common.
-- **the picture inside has to be still.** This is what tells a webcam from the
-  game's own panels, which have straight borders too and are drawn over the game
-  with the game showing through them. A person sits in a room and shifts a little;
-  the game behind a panel keeps moving. On a real stream the webcam measured 4
-  where the minimap, the chat column, the HUD panel and the scoreboard all measured
-  33 to 50.
-- the borders are then measured again on a full-size frame, to the pixel
-
-**One frame is also shown to the AI.** Reading a picture of a person is something
-a model does far better than any measurement, and it costs one call per stream, not
-per clip. What it says is used in a way that cannot do harm: its box picks *which*
-of the measured rectangles is the webcam, and if it matches none of them its own box
-is put onto the real borders and checked like any other candidate. A model that
-only reads text, a service that refuses pictures, or an answer that is nonsense all
-leave the measurement alone. If the model looks and says there is no webcam, that is
-believed: a stream with no webcam is cropped, which still looks right.
-
-That one frame is a small JPEG of the stream, and it goes to the AI service you
-configured, the same service the transcript already goes to. With no AI set, no
-picture leaves the machine and the borders are measured on their own.
-
-Only a sure answer is used. If the webcam is not found, the layout falls back to
-"Fill screen", which is still the right shape for a game.
-
-| | |
+| File | Purpose |
 |---|---|
-| found in the top-left of a real GTA V stream | 289x162 in a 1280x720 picture, high confidence |
-| a game panel in the bottom-right corner of a real stream | refused: it moves with the game behind it |
-| time | about 1-4 seconds, once per video or stream |
-
-## 4. Ad breaks and static screens
-
-Already covered: `studio/quality.py` finds the stretches of a video where
-nothing moved and drops any clip that sits inside one. On a stream stitched with
-commercials, this is the difference between a clip of the game and a clip of a
-sponsor reading.
-
-## What it does not do
-
-- **It does not watch the stream.** PeakCut reads words, loudness and chat. One frame
-  is looked at once, to find the webcam; it cannot tell that a headshot was good,
-  only that the streamer said something.
-- **It does not know the game's story.** "He got the polaroid photo" means
-  nothing to it, unless the streamer says it.
-- **The game list is hand-written.** A game that is not in `GAMES` gets no
-  special tags. Adding one is a line in that file.
-
-## Settings for launch night
-
-A launch-night roster of game streamers uses:
-
-```json
-{ "style": "hype", "layout": "gameplay", "min_len": 15, "max_len": 60,
-  "max_clips": 6, "min_score": 65, "auto_watch": false, "buffer_min": 10,
-  "live_per_hour": 4, "ai_every_min": 3, "ai_only_on_spike": true }
-```
-
-`min_score` is 65 rather than the default 80: launch night is chaotic, and a
-tighter bar means fewer clips.
-
-One setting is not in that list because it is an environment variable:
-**`PEAKCUT_LIVE_AI_TIMEOUT`** (45 seconds by default) is how long one AI answer
-may take on a live stream. It is short on purpose. The AI is asked on its own
-thread, so while a model is thinking the speech is still being written and
-"clip that" still works — a slow answer costs one check, not the stream.
-
-## The tests
-
-`tests/test_games.py` (17 checks) covers the game reading, the tags, and that
-the game's tags are added to a post without losing the AI's own. It is in their
-suite as *"knowing which game a stream is"*.
+| `studio/games.py` | Recognizes game names and context. |
+| `studio/brain.py` | AI prompts for clip selection, metadata, and webcam fallback. |
+| `studio/facecam.py` | Local webcam detection and optional vision-assisted confirmation. |
+| `studio/creators.py` | Creator defaults and saved webcam profile. |
+| `studio/jobs.py` | Automatic webcam calibration, profile reuse, and layout-version jobs. |
+| `studio/render.py` | Vertical layouts, caption placement, and rendering. |
+| `studio/posting.py` | Creator-specific tags and post queue integration. |
+| `tests/test_facecam.py` | Focused checks for camera detection, profile reuse, and rendering geometry. |

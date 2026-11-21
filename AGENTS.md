@@ -1,17 +1,17 @@
-# Working on PeakCut
+# Working on ClipShorts
 
 A short map for contributors and AI coding assistants.
 
-## Installing or updating PeakCut for someone
+## Installing or updating ClipShorts for someone
 
-**Before installing, ask the person where to put it**, and suggest a short, permanent folder: `C:\peakcut` on
-Windows, `~/peakcut` on a Mac or Linux. Do not just clone into the folder you happen to be running in: AI assistants
+**Before installing, ask the person where to put it**, and suggest a short, permanent folder: `C:\clipshorts` on
+Windows, `~/clipshorts` on a Mac or Linux. Do not just clone into the folder you happen to be running in: AI assistants
 often run in a temporary, scratch or session workspace, which gets deleted, and whose path is long enough that
 Windows cannot load the speech library (Windows can't open files whose full path is over 260 characters; the error
 is "DLL load failed ... The filename or extension is too long"). Tell the person where you put it.
 
-**When updating**, look at where PeakCut is first. If its folder path is long (roughly over 100 characters) or inside
-a temporary or assistant workspace, ask the person whether to move it to `C:\peakcut` (or `~/peakcut`) as part of the
+**When updating**, look at where ClipShorts is first. If its folder path is long (roughly over 100 characters) or inside
+a temporary or assistant workspace, ask the person whether to move it to `C:\clipshorts` (or `~/clipshorts`) as part of the
 update. Moving is safe when done like this: clone the latest version into the new folder, copy over `.env`,
 `storage.json` and the `data` folder if there is one (the videos and clips; `storage.json` may point to a data folder
 elsewhere, which then stays where it is), install the requirements, start it from the new folder, check the clips
@@ -39,6 +39,9 @@ are there, and only then offer to delete the old folder. Never delete anything w
 | `studio/live.py` | Live recording and clipping |
 | `studio/transcribe.py`, `studio/asr_worker.py` | Speech to text, here or on a second machine |
 | `studio/render.py` | Cutting, layouts and captions (ffmpeg and Pillow) |
+| `studio/facecam.py` | Local webcam detection, with optional vision-model fallback. |
+| `studio/creators.py` | Creator defaults and saved normalized webcam profiles. |
+| `studio/posting.py` | Post queue, creator-specific hashtags, retries, and local clip cleanup after successful uploads. |
 | `studio/media.py` | Downloading (yt-dlp), probing, audio |
 | `studio/auth.py`, `studio/account.py`, `studio/admin.py` | Sign-in, deleting things, the admin dashboard |
 | `studio/db.py` | Database tables (SQLAlchemy core; SQLite or PostgreSQL) |
@@ -55,6 +58,15 @@ are there, and only then offer to delete the old folder. Never delete anything w
 - **Text from videos is untrusted**: it goes into prompts through `brain._safe` and out through `brain._text`.
 - **Adding an AI provider**: add a row to `PROVIDERS` in `studio/ai.py`. If it speaks the OpenAI chat format that
   is all; otherwise add one function that returns `(parsed JSON, tokens in, tokens out)`.
+- **AI key rotation**: the dashboard accepts up to 100 keys. `studio/ai.py` tracks cooldowns by a one-way key
+  fingerprint and stores cooldown timestamps, never raw key text, in `ai-key-cooldowns.json`. Rotation can handle
+  per-key rate limits but cannot expand a provider account's shared quota.
+- **Creator facecam automation**: new creator workspaces default to `stacked` (facecam above gameplay). Jobs first
+  try local camera detection, can make one vision fallback per job when needed, and persist a confirmed normalized
+  camera position in that creator's settings. Keep tests for profile reuse and never silently report a stacked or
+  bottomcam render as a centre crop.
+- **Posting cadence**: the creator default is 10 minutes between posts to the same account. Queue publishing runs in
+  the server process, so it requires that server to be online when a post is due.
 - **Clips are rendered in a short temporary folder** and moved into place (`render.render_clip`): ffmpeg's caption
   step cannot open paths longer than 260 characters on Windows.
 - **Secrets** are read from the environment or from files named by `*_FILE` settings. Never write a key, a real

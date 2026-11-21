@@ -1,27 +1,38 @@
-# ClipShorts (local custom build)
+# ClipShorts
 
 ClipShorts is a locally customized build of the open-source [PeakCut project](https://github.com/haziqahmedqasmi/peakcut), with its original MIT license and attribution retained. The upstream project name remains in the code and license.
 
-Turn long videos and live streams into captioned vertical clips, ready to post. Free and open source: run it on
-your own computer or server, with your own AI key.
+Turn long videos and live streams into captioned vertical clips, ready to review and post. Run it on your own computer
+or on a server that stays online. AI is optional; you bring your own provider and pay that provider directly.
 
-Paste a YouTube, Twitch or Kick link (or upload a file) and ClipShorts finds the moments worth clipping, cuts them to
-9:16, adds word-by-word captions and a hook, and can post them to your connected accounts. It can also record a
-creator's live stream and clip the highlights while the stream is still running.
+Paste a YouTube, Twitch or Kick link (or upload a file) and ClipShorts analyzes it for moments, renders vertical clips,
+and can queue clips for connected accounts. You can also record supported live streams and clip moments from the
+recording. Selection uses the transcript and audio signals, with optional AI analysis; it does not visually understand
+every gameplay event. No service can guarantee that a clip will go viral.
 
 ## What it does
 
-- **Clips from any video.** Transcribes the audio, asks an AI which moments would hold a stranger's attention, and
-  renders each one with captions in one of three styles.
+- **Clips from videos.** Transcribes the audio, ranks candidate moments with transcript and audio signals, and uses
+  the configured AI when available to select moments and write clip metadata. Without a responding AI, it can still
+  select by audio signals, but AI-assisted selection and copy are unavailable.
 - **Live clipping.** Records a stream into a rolling buffer and clips as it happens, using loudness, chat activity
   and the transcript.
-- **Workspaces per creator.** Channels, clip settings, posting rules and an activity log for each creator you clip.
-- **Posting.** Connect YouTube, Instagram and TikTok in one click, then queue or auto-post finished clips, with
-  spacing and daily caps (see [DEPLOY.md](DEPLOY.md#connecting-youtube-instagram-and-tiktok) for the one-time setup).
+- **Creator workspaces.** Each creator has a channel, clip settings, posting rules, optional saved webcam position, and activity
+  log. Facecam above is the default layout. On the first suitable video, ClipShorts checks for a webcam locally, may
+  use one vision request if local detection cannot confirm it, and saves a successful position for later videos.
+- **Layouts.** Choose facecam above gameplay, facecam below gameplay, side-by-side, gameplay with a facecam overlay,
+  reaction focus, wide gameplay, action zoom, blurred fill, zoom, or centre crop. Finished clips can be re-rendered
+  into alternate layouts; layout versions are added for review and are not automatically posted.
+- **Posting.** Connect YouTube, Instagram and TikTok, then queue clips or turn on creator auto-posting. The local
+  queue publishes when its scheduled time arrives, using a default 10-minute spacing per account and the creator's
+  configured daily cap. The server must be running at publish time. See
+  [DEPLOY.md](DEPLOY.md#connecting-youtube-instagram-and-tiktok) for account setup.
 - **No sign-in on your own computer.** It opens straight into the dashboard. On a shared server, switch accounts on
   (`PEAKCUT_ACCOUNTS=1`) for email or Google sign-in and an admin dashboard.
-- **Your own AI.** Gemini, OpenAI, Grok, Groq, OpenRouter, Claude, a local model through Ollama, or anything that
-  speaks the OpenAI chat format. No key at all also works: clips are then picked by loudness.
+- **Your AI keys.** Save up to 100 keys for a provider. ClipShorts rotates among keys after per-key rate limits and
+  records cooldowns without storing key text in the cooldown file. Multiple keys do not multiply a shared account,
+  organization, model, or daily allowance. When provider quota or credit is exhausted, wait for reset or configure
+  another provider; adding keys under the same shared quota will not restore it. Ollama can run a model locally.
 
 ## Quick start
 
@@ -65,8 +76,9 @@ python -m studio.server
 
 The first start downloads the speech model by itself (about 480 MB, once).
 
-Open http://127.0.0.1:8765. There is no sign-in: it opens straight into the dashboard. Go to **Settings, AI**, choose
-your AI service, paste your key and press **Save and test** (see [Choose your AI](#choose-your-ai)).
+Open http://127.0.0.1:8765. On a local install it opens straight into the dashboard. Go to **Settings, AI**, choose
+your service and model, add one or more keys (one per line), and press **Save and test**. Keep the server running
+while videos process or queued posts are due.
 
 ## Choose your AI
 
@@ -74,7 +86,7 @@ ClipShorts needs a chat model that can return JSON. The easy way is in the dashb
 service, paste your key, press **Find models** to choose from the service's own list, then **Save and test**. The
 key is kept in the data folder on your machine and is never shown again.
 
-If you prefer a file (or run a server), the same three things can go in `.env`. What is saved in the dashboard wins:
+If you prefer a file (or run a server), provider, model and key can go in `.env`. Dashboard settings take precedence:
 
 ```ini
 PEAKCUT_AI_PROVIDER=gemini
@@ -93,12 +105,16 @@ PEAKCUT_AI_KEY=your-key-here
 | `ollama` | A model on your own machine, no key | https://ollama.com |
 | `custom` | Any OpenAI-compatible address: also set `PEAKCUT_AI_BASE_URL` | |
 
-- `PEAKCUT_AI_MODELS` is the model id exactly as the service names it. Model names change often, so check the
-  service's current list. Several ids separated by commas are tried in order, which gives you a fallback.
-- A fast, inexpensive model is the right choice. A one-hour video is read in about four requests.
+- `PEAKCUT_AI_MODELS` is the model id exactly as the service names it. Model names and limits change; check the
+  provider's current documentation. Several ids separated by commas are tried in order. Groq also has compatible
+  fallback models in the app.
+- You may save up to 100 keys in **Settings, AI**. Keys are rotated when a provider returns a credential-specific
+  error or rate limit; limited keys enter cooldown and are retried later. A daily or account-wide quota can affect
+  every key in that account, so key rotation cannot bypass it. The dashboard shows provider errors and AI usage.
 - You pay the AI service directly for what you use. The **AI usage** page in the app shows how many requests and
   tokens each video took.
-- Speech to text does not use the AI service. It runs on your own machine, so audio never leaves it.
+- Speech-to-text runs through the local model by default. If you configure a remote ASR worker, audio is sent to that
+  worker. AI prompts and any webcam frame used for facecam detection are sent to the AI provider you configured.
 
 ## Settings
 
@@ -107,7 +123,7 @@ Everything is set through environment variables, normally in a `.env` file next 
 
 | Setting | What it is for |
 |---|---|
-| `PEAKCUT_AI_PROVIDER`, `PEAKCUT_AI_MODELS`, `PEAKCUT_AI_KEY` | The AI that picks clips and writes titles (or set it in the dashboard) |
+| `PEAKCUT_AI_PROVIDER`, `PEAKCUT_AI_MODELS`, `PEAKCUT_AI_KEY` | The AI provider and model (or configure it in the dashboard) |
 | `PEAKCUT_ACCOUNTS` | `1` makes everyone sign in. Use it on any server other people can reach |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Optional: Sign in with Google, and connecting YouTube |
 | `PEAKCUT_SMTP_*`, `PEAKCUT_MAIL_FROM` | Optional: confirmation and password emails |
@@ -174,8 +190,11 @@ docker compose up -d --build
 - Each person's videos wait in their own line and the lines take turns, so one person cannot hold everyone up.
 - The server measures its own processor, memory and disk every second. Extra videos and recordings start only
   while there is room, wait briefly when it is nearly full, and continue the moment it frees up.
-- There are no limits on upload size, video length, recordings, creators or storage unless you set them in
-  `.env`. Five videos can be sent at once. Request sizes are always capped, so junk can't fill the memory.
+- Clip jobs default to up to 50 requested clips; the supported maximum is 500. Creator workspaces can set their own
+  clip count and posting rules. Server upload, job, live-recording, storage, and concurrency limits can be configured
+  in `.env`; processing speed depends on available CPU, memory, disk, network, and the selected AI provider.
+- The server needs to stay on for local processing, live recording, and queue publishing. A deployed server can run
+  continuously only if its host does not sleep, stop, or exceed its free-tier limits.
 
 ## Tests
 
