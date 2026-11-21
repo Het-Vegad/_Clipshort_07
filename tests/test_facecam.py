@@ -133,6 +133,8 @@ try:
           "crop=948:1080:486:0,scale=1080:1230" in bottomcam, True)
     gx, gy, gw, gh = render._game_panel_crop(1920, 1080, 1080, 1230, [1518, 122, 378, 236])
     check("the game zoom crop stays clear of the upper-right webcam", gx + gw <= 1518 or gx >= 1896, True)
+    gx, gy, gw, gh = render._game_panel_crop(1280, 720, 1080, 1230, [0, 307, 260, 164])
+    check("the game zoom crop stays clear of IShowSpeed's lower-left webcam", gx >= 260 or gx + gw <= 0, True)
     check("facecam-above title sits over the gameplay picture", render._hook_y("stacked", 180) > int(render.H * 0.36), True)
     check("facecam-below title sits inside the gameplay panel", render._hook_y("bottomcam", 250) < int(render.H * 0.64), True)
     above_geom = render.geometry(1920, 1080, "stacked")

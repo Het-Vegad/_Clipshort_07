@@ -660,6 +660,8 @@ def render_one(job, clip, words):
         local = dict(clip, start=clip["start"] - off, end=clip["end"] - off, hook=roman.to_roman(clip.get("hook") or ""))
         near = _caption_words(job, clip, words, off) if clip.get("captions", True) else []
         out = render.render_clip(src, d / "clips", clip["id"], local, near, job["width"], job["height"])
+        if clip.get("layout") in ("stacked", "bottomcam") and out.get("layout") != clip.get("layout"):
+            raise RuntimeError(f"Requested {clip['layout']} layout, but the renderer returned {out.get('layout') or 'no layout'}. The clip was not marked ready.")
         clip.update(out, status="done", version=clip.get("version", 0) + 1, error=None)
         post = {k: clip[k] for k in ("title", "description", "hashtags", "hook", "start", "end", "score")}
         (d / "clips" / f"{clip['id']}.json").write_text(json.dumps(post, indent=1), encoding="utf-8")
